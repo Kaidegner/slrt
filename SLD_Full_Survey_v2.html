@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SIMPLER Leader/ship Diagnostic</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ob-orange: #F26227;
+    --ob-gold: #FDB639;
+    --ob-blue: #466289;
+    --text-primary: #1a1a1a;
+    --text-secondary: #555;
+    --text-muted: #888;
+    --border: #e0ddd8;
+    --bg: #fff;
+    --bg-surface: #f7f6f4;
+    --bg-card: #fff;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --text-primary: #f0efec;
+      --text-secondary: #b0aaa0;
+      --text-muted: #666;
+      --border: #333;
+      --bg: #141414;
+      --bg-surface: #1e1e1e;
+      --bg-card: #242424;
+    }
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    min-height: 100vh;
+  }
+
+  .topbar {
+    background: var(--ob-orange);
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .topbar-logo {
+    width: 38px; height: 38px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .topbar-logo svg { width: 24px; height: 24px; }
+  .topbar-text .title { font-size: 17px; font-weight: 600; color: #fff; letter-spacing: -0.01em; }
+  .topbar-text .subtitle { font-size: 12px; color: rgba(255,255,255,0.75); margin-top: 1px; }
+
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ── INTRO ── */
+  .intro-wrap { max-width: 680px; margin: 0 auto; padding: 48px 24px; }
+  .intro-wrap h1 { font-size: 28px; font-weight: 700; color: var(--text-primary); margin-bottom: 12px; letter-spacing: -0.02em; }
+  .intro-wrap h1 span { color: var(--ob-orange); }
+  .intro-wrap p { font-size: 15px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 16px; }
+
+  .intro-meta {
+    background: var(--bg-surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 20px 24px; margin: 24px 0;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+  }
+  .meta-item .ml { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
+  .meta-item .mv { font-size: 14px; color: var(--text-primary); font-weight: 500; }
+
+  .scale-guide { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px 24px; margin: 24px 0; }
+  .scale-guide h3 { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 12px; }
+  .scale-row { display: flex; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); }
+  .scale-cell { flex: 1; padding: 10px 6px; text-align: center; border-right: 1px solid var(--border); background: var(--bg-card); }
+  .scale-cell:last-child { border-right: none; }
+  .scale-cell .sn { font-size: 18px; font-weight: 700; color: var(--ob-orange); }
+  .scale-cell .sl { font-size: 11px; color: var(--text-secondary); margin-top: 3px; line-height: 1.3; }
+
+  .field-group { margin-bottom: 16px; }
+  .field-label { font-size: 12px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); display: block; margin-bottom: 6px; }
+  .field-input {
+    width: 100%; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 10px 14px; font-size: 14px; background: var(--bg-card);
+    color: var(--text-primary); outline: none; transition: border-color 0.15s;
+  }
+  .field-input:focus { border-color: var(--ob-orange); }
+  .field-input.error { border-color: #c0392b; }
+
+  .wave-select {
+    display: flex; gap: 10px; margin-top: 4px;
+  }
+  .wave-opt { flex: 1; }
+  .wave-opt input[type="radio"] { display: none; }
+  .wave-opt label {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    padding: 14px 10px; border: 1px solid var(--border); border-radius: var(--radius-lg);
+    cursor: pointer; font-size: 13px; color: var(--text-secondary);
+    text-align: center; transition: all 0.12s; background: var(--bg-surface);
+  }
+  .wave-opt label .wave-icon { font-size: 22px; }
+  .wave-opt label .wave-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+  .wave-opt label .wave-sub { font-size: 11px; color: var(--text-muted); }
+  .wave-opt input:checked + label {
+    border-color: var(--ob-orange); background: rgba(242,98,39,0.07);
+  }
+  .wave-opt input:checked + label .wave-title { color: var(--ob-orange); }
+
+  .email-tip {
+    background: rgba(253,182,57,0.12); border: 1px solid rgba(253,182,57,0.4);
+    border-radius: var(--radius); padding: 12px 16px; font-size: 13px;
+    color: var(--text-secondary); line-height: 1.6; margin-top: 8px;
+  }
+  .email-tip strong { color: var(--text-primary); }
+
+  .disclaimer {
+    font-size: 12px; color: var(--text-muted); line-height: 1.6;
+    padding: 16px; border: 1px solid var(--border); border-radius: var(--radius); margin: 24px 0;
+  }
+
+  .btn-start {
+    width: 100%; padding: 14px; background: var(--ob-orange); color: #fff;
+    border: none; border-radius: var(--radius-lg); font-size: 16px; font-weight: 600;
+    cursor: pointer; transition: opacity 0.15s; margin-top: 8px;
+  }
+  .btn-start:hover { opacity: 0.88; }
+
+  /* ── SURVEY ── */
+  .survey-wrap { max-width: 760px; margin: 0 auto; padding: 32px 24px 80px; }
+
+  .progress-label { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; display: flex; justify-content: space-between; }
+  .progress-bar-wrap { background: var(--bg-surface); border-radius: 99px; height: 6px; margin-bottom: 32px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; background: var(--ob-orange); border-radius: 99px; transition: width 0.3s ease; }
+
+  .section-banner { padding: 14px 20px; border-radius: var(--radius-lg); margin-bottom: 24px; display: flex; align-items: flex-start; gap: 14px; }
+  .section-banner.self { background: rgba(242,98,39,0.08); border: 1px solid rgba(242,98,39,0.2); }
+  .section-banner.team { background: rgba(70,98,137,0.08); border: 1px solid rgba(70,98,137,0.2); }
+  .section-banner .sb-icon { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; flex-shrink: 0; margin-top: 2px; }
+  .section-banner.self .sb-icon { background: rgba(242,98,39,0.15); color: var(--ob-orange); }
+  .section-banner.team .sb-icon { background: rgba(70,98,137,0.15); color: var(--ob-blue); }
+  .section-banner .sb-title { font-size: 15px; font-weight: 700; margin-bottom: 3px; }
+  .section-banner.self .sb-title { color: var(--ob-orange); }
+  .section-banner.team .sb-title { color: var(--ob-blue); }
+  .section-banner .sb-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+
+  .dim-block { margin-bottom: 28px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+  .dim-header { padding: 12px 18px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); }
+  .dim-key-badge { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; flex-shrink: 0; }
+  .dim-key-badge.self { background: rgba(242,98,39,0.12); color: var(--ob-orange); }
+  .dim-key-badge.team { background: rgba(70,98,137,0.12); color: var(--ob-blue); }
+  .dim-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+  .dim-title-sub { font-size: 12px; color: var(--text-muted); margin-left: 4px; font-weight: 400; }
+
+  .item-row { padding: 16px 18px; border-bottom: 1px solid var(--border); }
+  .item-row:last-child { border-bottom: none; }
+  .item-text { font-size: 14px; color: var(--text-primary); line-height: 1.55; margin-bottom: 12px; }
+  .item-num { font-size: 11px; color: var(--text-muted); margin-right: 6px; }
+
+  .likert-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .likert-opt { flex: 1; min-width: 80px; }
+  .likert-opt input[type="radio"] { display: none; }
+  .likert-opt label {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    padding: 8px 4px; border: 1px solid var(--border); border-radius: var(--radius);
+    cursor: pointer; font-size: 11px; color: var(--text-secondary);
+    text-align: center; line-height: 1.3; transition: all 0.12s; background: var(--bg-surface);
+  }
+  .likert-opt label .opt-num { font-size: 16px; font-weight: 700; color: var(--text-muted); }
+  .likert-opt input:checked + label { border-color: var(--ob-orange); background: rgba(242,98,39,0.08); color: var(--ob-orange); }
+  .likert-opt input:checked + label .opt-num { color: var(--ob-orange); }
+  .likert-opt label:hover { border-color: var(--ob-orange); background: rgba(242,98,39,0.04); }
+
+  .survey-nav {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--bg-card); border-top: 1px solid var(--border);
+    padding: 16px 24px; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px; z-index: 100;
+  }
+  .nav-info { font-size: 13px; color: var(--text-muted); }
+  .nav-info strong { color: var(--text-primary); }
+  .btn-submit {
+    padding: 12px 32px; background: var(--ob-orange); color: #fff;
+    border: none; border-radius: var(--radius-lg); font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: opacity 0.15s;
+  }
+  .btn-submit:hover { opacity: 0.88; }
+
+  .error-msg {
+    background: rgba(220,50,50,0.08); border: 1px solid rgba(220,50,50,0.25);
+    border-radius: var(--radius); padding: 12px 16px; font-size: 13px;
+    color: #c0392b; margin-bottom: 16px; display: none;
+  }
+
+  /* ── RESULTS ── */
+  .results-wrap { max-width: 680px; margin: 0 auto; padding: 40px 24px 64px; }
+
+  .results-header { text-align: center; margin-bottom: 32px; }
+  .results-header .wave-badge {
+    display: inline-block; padding: 4px 14px; border-radius: 99px;
+    font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .wave-badge.pre { background: rgba(242,98,39,0.1); color: var(--ob-orange); }
+  .wave-badge.post { background: rgba(70,98,137,0.1); color: var(--ob-blue); }
+  .results-header h2 { font-size: 24px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; letter-spacing: -0.01em; }
+  .results-header .student-name { font-size: 18px; color: var(--ob-orange); font-weight: 600; margin-bottom: 4px; }
+  .results-header .date-line { font-size: 13px; color: var(--text-muted); }
+
+  .canvas-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 24px;
+    display: flex; flex-direction: column; align-items: center; gap: 16px; margin-bottom: 24px;
+  }
+  canvas { max-width: 100%; height: auto; }
+
+  .legend { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); }
+  .legend-swatch { width: 12px; height: 12px; border-radius: 3px; }
+  .legend-dash { width: 20px; height: 0; border-top: 2px dashed var(--text-muted); }
+
+  .scores-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 24px; }
+  .score-tile { background: var(--bg-surface); border-radius: 6px; padding: 8px 4px; text-align: center; }
+  .score-tile .tl { font-size: 10px; color: var(--text-muted); margin-bottom: 2px; }
+  .score-tile .tv { font-size: 15px; font-weight: 700; }
+  .score-tile.self .tv { color: var(--ob-orange); }
+  .score-tile.team .tv { color: var(--ob-blue); }
+
+  .insight-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-left: 3px solid var(--ob-orange); border-radius: var(--radius-lg);
+    padding: 20px 24px; margin-bottom: 24px;
+  }
+  .insight-card h3 { font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ob-orange); margin-bottom: 12px; }
+  .insight-card p { font-size: 14px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 10px; }
+  .insight-card p:last-child { margin-bottom: 0; }
+  .insight-card strong { color: var(--text-primary); font-weight: 600; }
+
+  .scores-table { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 24px; }
+  .scores-table table { width: 100%; border-collapse: collapse; }
+  .scores-table th { padding: 10px 16px; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); text-align: left; border-bottom: 1px solid var(--border); background: var(--bg-surface); }
+  .scores-table td { padding: 10px 16px; font-size: 13px; color: var(--text-primary); border-bottom: 1px solid var(--border); }
+  .scores-table tr:last-child td { border-bottom: none; }
+  .score-bar-wrap { display: flex; align-items: center; gap: 10px; }
+  .score-bar { flex: 1; height: 6px; background: var(--bg-surface); border-radius: 99px; overflow: hidden; }
+  .score-bar-fill { height: 100%; border-radius: 99px; }
+  .score-val { font-size: 13px; font-weight: 700; min-width: 28px; text-align: right; }
+
+  .status-card {
+    border-radius: var(--radius); padding: 12px 16px; font-size: 13px;
+    line-height: 1.6; margin-bottom: 16px; display: none;
+  }
+  .status-card.success { background: rgba(39,174,96,0.08); border: 1px solid rgba(39,174,96,0.3); color: #27ae60; }
+  .status-card.warning { background: rgba(253,182,57,0.1); border: 1px solid rgba(253,182,57,0.4); color: #b8860b; }
+  .status-card.error { background: rgba(220,50,50,0.08); border: 1px solid rgba(220,50,50,0.25); color: #c0392b; }
+
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+  .btn-download { flex: 1; padding: 12px 20px; background: var(--ob-orange); color: #fff; border: none; border-radius: var(--radius-lg); font-size: 14px; font-weight: 600; cursor: pointer; transition: opacity 0.15s; text-align: center; }
+  .btn-download:hover { opacity: 0.88; }
+  .btn-email { flex: 1; padding: 12px 20px; background: var(--ob-blue); color: #fff; border: none; border-radius: var(--radius-lg); font-size: 14px; font-weight: 600; cursor: pointer; transition: opacity 0.15s; text-align: center; }
+  .btn-email:hover { opacity: 0.88; }
+  .btn-retake { padding: 12px 20px; background: transparent; color: var(--text-secondary); border: 1px solid var(--border); border-radius: var(--radius-lg); font-size: 14px; cursor: pointer; }
+
+  .footer-note { font-size: 11px; color: var(--text-muted); text-align: center; line-height: 1.6; margin-top: 32px; padding-top: 20px; border-top: 1px solid var(--border); }
+
+  .loading-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 999; display: none;
+  }
+  .loading-box {
+    background: var(--bg-card); border-radius: var(--radius-lg);
+    padding: 32px 40px; text-align: center;
+  }
+  .loading-box p { font-size: 14px; color: var(--text-secondary); margin-top: 12px; }
+  .spinner {
+    width: 36px; height: 36px; border: 3px solid var(--border);
+    border-top-color: var(--ob-orange); border-radius: 50%;
+    animation: spin 0.8s linear infinite; margin: 0 auto;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 600px) {
+    .intro-meta { grid-template-columns: 1fr; }
+    .likert-opt { min-width: 56px; }
+    .likert-opt label { padding: 6px 2px; font-size: 10px; }
+    .wave-select { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOADING OVERLAY -->
+<div class="loading-overlay" id="loading-overlay">
+  <div class="loading-box">
+    <div class="spinner"></div>
+    <p id="loading-msg">Scoring your responses…</p>
+  </div>
+</div>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-logo">
+    <svg viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="10" stroke="white" stroke-width="2"/>
+      <path d="M12 6v6.5l4.5 2.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </div>
+  <div class="topbar-text">
+    <div class="title">SIMPLER Leader/ship Diagnostic</div>
+    <div class="subtitle">Dr. Kai Degner · SIMPLER Leadership LLC · simplerleadership.com</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ PAGE 1: INTRO ═══ -->
+<div class="page active" id="page-intro">
+  <div class="intro-wrap">
+    <h1>Know how you <span>lead.</span></h1>
+    <p>The SIMPLER Leader/ship Diagnostic measures your leadership across 14 dimensions — 7 focused on how you lead yourself, and 7 focused on how you lead others. Your results will appear as a visual profile you can use for reflection and growth.</p>
+    <p>There are no right or wrong answers. Answer honestly based on what you actually do, not what you think you should do.</p>
+
+    <div class="intro-meta">
+      <div class="meta-item"><div class="ml">Items</div><div class="mv">42 questions</div></div>
+      <div class="meta-item"><div class="ml">Time</div><div class="mv">8–12 minutes</div></div>
+      <div class="meta-item"><div class="ml">Scale</div><div class="mv">1 (Never) – 5 (Almost Always)</div></div>
+      <div class="meta-item"><div class="ml">Output</div><div class="mv">Spider diagram + reflection prompts</div></div>
+    </div>
+
+    <div class="scale-guide">
+      <h3>Response scale</h3>
+      <div class="scale-row">
+        <div class="scale-cell"><div class="sn">1</div><div class="sl">Never</div></div>
+        <div class="scale-cell"><div class="sn">2</div><div class="sl">Rarely</div></div>
+        <div class="scale-cell"><div class="sn">3</div><div class="sl">Sometimes</div></div>
+        <div class="scale-cell"><div class="sn">4</div><div class="sl">Often</div></div>
+        <div class="scale-cell"><div class="sn">5</div><div class="sl">Almost Always</div></div>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="introName">Your full name</label>
+      <input class="field-input" id="introName" type="text" placeholder="e.g. Alex Johnson"/>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="introEmail">Your email address</label>
+      <input class="field-input" id="introEmail" type="email" placeholder="e.g. aj2cd@virginia.edu"/>
+      <div class="email-tip" style="margin-top:8px;">
+        ⚠️ <strong>Important:</strong> Use the same email address for both your Pre-Test and Post-Test. Your results receipt will be sent here — save that email so you can look up your address if needed.
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="introCohort">Course / cohort (optional)</label>
+      <input class="field-input" id="introCohort" type="text" placeholder="e.g. LDRS 5010 · Summer 2026"/>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Which test is this?</label>
+      <div class="wave-select">
+        <div class="wave-opt">
+          <input type="radio" name="wave" id="wave-pre" value="Pre-Test" checked/>
+          <label for="wave-pre">
+            <span class="wave-icon">🌱</span>
+            <span class="wave-title">Pre-Test</span>
+            <span class="wave-sub">Week 1 baseline</span>
+          </label>
+        </div>
+        <div class="wave-opt">
+          <input type="radio" name="wave" id="wave-post" value="Post-Test"/>
+          <label for="wave-post">
+            <span class="wave-icon">🌿</span>
+            <span class="wave-title">Post-Test</span>
+            <span class="wave-sub">Week 9 — shows growth overlay</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="disclaimer">
+      This instrument is a prototype in development. Scores are self-reported and not normative — use your profile as a starting point for reflection, not as a definitive assessment of your leadership. © SIMPLER Leadership LLC. All rights reserved.
+    </div>
+
+    <div id="intro-error" class="error-msg"></div>
+    <button class="btn-start" onclick="startSurvey()">Begin the diagnostic →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ PAGE 2: SURVEY ═══ -->
+<div class="page" id="page-survey">
+  <div class="survey-wrap">
+    <div class="progress-label">
+      <span id="progress-text">0 of 42 answered</span>
+      <span id="progress-pct">0%</span>
+    </div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progress-fill" style="width:0%"></div>
+    </div>
+    <div id="survey-error" class="error-msg"></div>
+    <div id="survey-body"></div>
+  </div>
+  <div class="survey-nav">
+    <div class="nav-info"><strong id="nav-answered">0</strong> of 42 answered</div>
+    <button class="btn-submit" onclick="submitSurvey()">See my results →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ PAGE 3: RESULTS ═══ -->
+<div class="page" id="page-results">
+  <div class="results-wrap">
+    <div class="results-header">
+      <div class="wave-badge" id="result-wave-badge">Pre-Test</div>
+      <div class="student-name" id="result-name"></div>
+      <h2>Your Leadership Profile</h2>
+      <div class="date-line" id="result-date"></div>
+    </div>
+
+    <div id="sheet-status" class="status-card"></div>
+
+    <div class="canvas-card">
+      <canvas id="spiderCanvas" width="500" height="500"
+        role="img" aria-label="SIMPLER Leadership Diagnostic radar diagram"></canvas>
+      <div class="legend" id="legend-area"></div>
+    </div>
+
+    <div class="scores-grid" id="scores-grid"></div>
+
+    <div class="insight-card">
+      <h3 id="insight-title">Reflection prompts</h3>
+      <div id="insight-body"></div>
+    </div>
+
+    <div class="scores-table">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:40%;">Dimension</th>
+            <th style="width:45%;" id="table-score-header">Score</th>
+            <th style="width:15%;">/ 5</th>
+          </tr>
+        </thead>
+        <tbody id="scores-table-body"></tbody>
+      </table>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-download" onclick="downloadPNG()">⬇ Download diagram</button>
+      <button class="btn-email" onclick="sendEmailResults()">✉ Email my results</button>
+      <button class="btn-retake" onclick="retake()">Start over</button>
+    </div>
+
+    <div class="footer-note">
+      This instrument is a prototype in development. Scores are self-reported and not normative — use your profile as a starting point for reflection, not as a definitive leadership assessment.<br>
+      © SIMPLER Leadership LLC · Dr. Kai Degner · simplerleadership.com
+    </div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────
+// CONFIGURATION — update these two values before deploying
+// ─────────────────────────────────────────────────────────────
+const GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbxZcL3i7MiPhPftKl7XDQh97wab7mCg-ZI4zuAKP44L65KbG4b9X3mfeT5vPC80giZ8/exec';
+const INSTRUCTOR_EMAIL = 'kai.degner@gmail.com';
+
+// ─────────────────────────────────────────────────────────────
+// INSTRUMENT DATA
+// ─────────────────────────────────────────────────────────────
+const SCALE = ['Never','Rarely','Sometimes','Often','Almost Always'];
+
+const SELF_DIMS = [
+  { key:'S', label:'Self Identity',  desc:'Viewing yourself as a leader and overcoming internal barriers to leading.' },
+  { key:'I', label:'Integrity',      desc:'Acting in alignment with your values, commitments, and words.' },
+  { key:'M', label:'Make Meaning',   desc:'Taking ownership of the meaning you make of events and circumstances.' },
+  { key:'P', label:'Prioritize',     desc:'Identifying and focusing on what matters most amid competing demands.' },
+  { key:'L', label:'Learn',          desc:'Staying open and adaptive by continuously integrating new insights.' },
+  { key:'E', label:'Execute',        desc:'Following through with disciplined action and accountability.' },
+  { key:'R', label:'Reflect',        desc:'Routinely pausing to examine results of behaviors, interpretations, and mindset.' }
+];
+
+const TEAM_DIMS = [
+  { key:'S', label:'Synchronize',       desc:'Aligning roles, responsibilities, and coordination so the team moves together.' },
+  { key:'I', label:'Innovate',          desc:'Creating conditions where new ideas are welcome and experimentation is safe.' },
+  { key:'M', label:'Meet',              desc:'Designing and facilitating meetings that produce clarity and commitment.' },
+  { key:'P', label:'Prioritize',        desc:'Helping the team identify and protect focus on what matters most.' },
+  { key:'L', label:'Listening Culture', desc:'Building a culture where every team member feels genuinely heard.' },
+  { key:'E', label:'Empower',           desc:'Developing others and distributing leadership so you are not the bottleneck.' },
+  { key:'R', label:'Refine',            desc:'Continuously improving team processes through honest feedback and iteration.' }
+];
+
+const SELF_ITEMS = [
+  { text: "I see myself as a leader, even if I don't have a leadership title.", reverse: false },
+  { text: "When I doubt myself as a leader, I stop and think about where the doubt is coming from.", reverse: false },
+  { text: "I step up to lead when it is needed, even when no one is asking me to.", reverse: false },
+  { text: "I do what I say I will do, even when it is hard or uncomfortable.", reverse: false },
+  { text: "When I act in ways that don't match what I believe in, I own it and fix it.", reverse: false },
+  { text: "I make choices that match what I believe in, even when another choice would be easier.", reverse: false },
+  { text: "I look for meaning in difficult situations rather than just accepting them at face value.", reverse: false },
+  { text: "I let things outside my control decide how I feel about my work.", reverse: true },
+  { text: "When something goes wrong, I choose how I think about it rather than just going with my first reaction.", reverse: false },
+  { text: "I figure out my most important work and make time for it before dealing with other demands.", reverse: false },
+  { text: "I say no to things that would keep me from focusing on what matters most.", reverse: false },
+  { text: "I get to the end of a week and realize I spent most of my time on things that didn't really matter.", reverse: true },
+  { text: "I look for ideas and views that push back on how I already see things.", reverse: false },
+  { text: "I consider feedback carefully, even when my first instinct is to push back.", reverse: false },
+  { text: "I use what I learn from recent experiences to do things differently next time.", reverse: false },
+  { text: "I complete tasks and projects by the deadlines I have committed to.", reverse: false },
+  { text: "When I fall behind on something important, I let it slip away rather than dealing with it.", reverse: true },
+  { text: "I turn big goals into small, clear steps and follow through on them.", reverse: false },
+  { text: "I make regular time to think about what is and isn't working in how I lead.", reverse: false },
+  { text: "I think about how my own beliefs or attitudes may have played a role in a difficult situation.", reverse: false },
+  { text: "I move from one task or conversation to the next without stopping to think about what I could do better.", reverse: true },
+];
+
+const TEAM_ITEMS = [
+  { text: "I make sure everyone on my team knows exactly what their job is.", reverse: false },
+  { text: "When my team gets out of sync, I look for the real reason why rather than just fixing the surface problem.", reverse: false },
+  { text: "I assume people know what is expected of them without checking to make sure.", reverse: true },
+  { text: "I make it safe for people on my team to share ideas without worrying they will be criticized.", reverse: false },
+  { text: "When we try something new and it doesn't work, I treat it as something to learn from rather than a failure to avoid.", reverse: false },
+  { text: "When someone on my team shares an unusual idea, I doubt it before I really think it through.", reverse: true },
+  { text: "The meetings I run end with clear decisions, clear owners, and clear next steps.", reverse: false },
+  { text: "I design meetings with a specific purpose and structure before bringing people together.", reverse: false },
+  { text: "People leave meetings I lead unsure of what was decided or what they are supposed to do next.", reverse: true },
+  { text: "I help my team tell the difference between what is urgent and what is actually important.", reverse: false },
+  { text: "I protect my team from interruptions and extra requests that would pull them away from their most important work.", reverse: false },
+  { text: "I add new work to my team's plate without thinking about what should come off to make room.", reverse: true },
+  { text: "I create a culture on my team where people truly listen to one another.", reverse: false },
+  { text: "When a team member raises a concern, I make sure they feel heard before moving toward a solution.", reverse: false },
+  { text: "I notice when someone on my team has gone quiet and create space for them to share what's on their mind.", reverse: false },
+  { text: "I give others meaningful work on purpose to help them grow, not just to get things off my plate.", reverse: false },
+  { text: "I make decisions myself that my team members could handle on their own.", reverse: true },
+  { text: "I look for chances to let team members lead, even when I could do it myself.", reverse: false },
+  { text: "I regularly make time for my team to talk about how we are working together and what we could do better.", reverse: false },
+  { text: "I act on feedback from my team about how we could work together better.", reverse: false },
+  { text: "I defend how my team does things even when those ways are no longer working well.", reverse: true },
+];
+
+// ─────────────────────────────────────────────────────────────
+// GLOBAL STATE
+// ─────────────────────────────────────────────────────────────
+let studentName = '';
+let studentEmail = '';
+let cohortLabel = '';
+let selectedWave = 'Pre-Test';
+let finalScores = { self: [], team: [] };
+let preTestScores = null; // populated on Post-Test if found
+
+// ─────────────────────────────────────────────────────────────
+// NAVIGATION
+// ─────────────────────────────────────────────────────────────
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function showLoading(msg) {
+  document.getElementById('loading-msg').textContent = msg || 'Processing…';
+  document.getElementById('loading-overlay').style.display = 'flex';
+}
+
+function hideLoading() {
+  document.getElementById('loading-overlay').style.display = 'none';
+}
+
+function retake() {
+  document.getElementById('introName').value = '';
+  document.getElementById('introEmail').value = '';
+  document.getElementById('introCohort').value = '';
+  document.getElementById('wave-pre').checked = true;
+  preTestScores = null;
+  showPage('page-intro');
+}
+
+// ─────────────────────────────────────────────────────────────
+// START SURVEY
+// ─────────────────────────────────────────────────────────────
+function startSurvey() {
+  const nameEl = document.getElementById('introName');
+  const emailEl = document.getElementById('introEmail');
+  const errEl = document.getElementById('intro-error');
+  errEl.style.display = 'none';
+
+  let errors = [];
+  if (!nameEl.value.trim()) { nameEl.classList.add('error'); errors.push('Please enter your full name.'); } else { nameEl.classList.remove('error'); }
+  if (!emailEl.value.trim() || !emailEl.value.includes('@')) { emailEl.classList.add('error'); errors.push('Please enter a valid email address.'); } else { emailEl.classList.remove('error'); }
+
+  if (errors.length) {
+    errEl.textContent = errors.join(' ');
+    errEl.style.display = 'block';
+    return;
+  }
+
+  studentName = nameEl.value.trim();
+  studentEmail = emailEl.value.trim().toLowerCase();
+  cohortLabel = document.getElementById('introCohort').value.trim();
+  selectedWave = document.querySelector('input[name="wave"]:checked').value;
+
+  buildSurvey();
+  showPage('page-survey');
+}
+
+// ─────────────────────────────────────────────────────────────
+// BUILD SURVEY
+// ─────────────────────────────────────────────────────────────
+function buildSurvey() {
+  const body = document.getElementById('survey-body');
+  body.innerHTML = '';
+
+  const selfBanner = document.createElement('div');
+  selfBanner.className = 'section-banner self';
+  selfBanner.innerHTML = `
+    <div class="sb-icon">S</div>
+    <div>
+      <div class="sb-title">Part 1: SIMPLER SELF — How you lead yourself</div>
+      <div class="sb-desc">These 21 questions focus on your personal leadership capacity — how you manage yourself, your mindset, and your actions as a leader.</div>
+    </div>`;
+  body.appendChild(selfBanner);
+
+  SELF_DIMS.forEach((dim, dIdx) => {
+    body.appendChild(buildDimBlock(dim, 'self', SELF_ITEMS.slice(dIdx*3, dIdx*3+3), dIdx*3));
+  });
+
+  const teamBanner = document.createElement('div');
+  teamBanner.className = 'section-banner team';
+  teamBanner.style.marginTop = '32px';
+  teamBanner.innerHTML = `
+    <div class="sb-icon">T</div>
+    <div>
+      <div class="sb-title">Part 2: SIMPLER TEAM — How you lead others</div>
+      <div class="sb-desc">These 21 questions focus on how you lead within a team context — how you create conditions for your team to thrive.</div>
+    </div>`;
+  body.appendChild(teamBanner);
+
+  TEAM_DIMS.forEach((dim, dIdx) => {
+    body.appendChild(buildDimBlock(dim, 'team', TEAM_ITEMS.slice(dIdx*3, dIdx*3+3), 21 + dIdx*3));
+  });
+
+  updateProgress();
+}
+
+function buildDimBlock(dim, half, items, globalOffset) {
+  const block = document.createElement('div');
+  block.className = 'dim-block';
+  block.innerHTML = `
+    <div class="dim-header">
+      <div class="dim-key-badge ${half}">${dim.key}</div>
+      <div class="dim-title">${half === 'self' ? 'SELF' : 'TEAM'}: ${dim.label}<span class="dim-title-sub">— ${dim.desc}</span></div>
+    </div>`;
+
+  items.forEach((item, iIdx) => {
+    const gIdx = globalOffset + iIdx;
+    const itemDiv = document.createElement('div');
+    itemDiv.className = 'item-row';
+    const opts = SCALE.map((label, val) => `
+      <div class="likert-opt">
+        <input type="radio" name="item_${gIdx}" id="item_${gIdx}_${val+1}" value="${val+1}" onchange="updateProgress()">
+        <label for="item_${gIdx}_${val+1}">
+          <span class="opt-num">${val+1}</span>${label}
+        </label>
+      </div>`).join('');
+    itemDiv.innerHTML = `
+      <div class="item-text"><span class="item-num">${gIdx+1}.</span>${item.text}</div>
+      <div class="likert-row">${opts}</div>`;
+    block.appendChild(itemDiv);
+  });
+  return block;
+}
+
+// ─────────────────────────────────────────────────────────────
+// PROGRESS
+// ─────────────────────────────────────────────────────────────
+function updateProgress() {
+  let answered = 0;
+  for (let i=0; i<42; i++) {
+    if (document.querySelector(`input[name="item_${i}"]:checked`)) answered++;
+  }
+  const pct = Math.round((answered/42)*100);
+  document.getElementById('progress-text').textContent = `${answered} of 42 answered`;
+  document.getElementById('progress-pct').textContent = `${pct}%`;
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('nav-answered').textContent = answered;
+}
+
+// ─────────────────────────────────────────────────────────────
+// SUBMIT + SCORE
+// ─────────────────────────────────────────────────────────────
+async function submitSurvey() {
+  const missing = [];
+  for (let i=0; i<42; i++) {
+    if (!document.querySelector(`input[name="item_${i}"]:checked`)) missing.push(i);
+  }
+  const errEl = document.getElementById('survey-error');
+  if (missing.length > 0) {
+    errEl.style.display = 'block';
+    errEl.textContent = `Please answer all questions before submitting. You have ${missing.length} unanswered question${missing.length>1?'s':''}.`;
+    document.querySelector(`input[name="item_${missing[0]}"]`).closest('.item-row').scrollIntoView({ behavior:'smooth', block:'center' });
+    return;
+  }
+  errEl.style.display = 'none';
+
+  // Score
+  const rawSelf = [], rawTeam = [];
+  for (let i=0; i<21; i++) {
+    const val = parseInt(document.querySelector(`input[name="item_${i}"]:checked`).value);
+    rawSelf.push(SELF_ITEMS[i].reverse ? (6-val) : val);
+  }
+  for (let i=0; i<21; i++) {
+    const val = parseInt(document.querySelector(`input[name="item_${21+i}"]:checked`).value);
+    rawTeam.push(TEAM_ITEMS[i].reverse ? (6-val) : val);
+  }
+
+  finalScores.self = SELF_DIMS.map((_,d) => parseFloat((rawSelf.slice(d*3,d*3+3).reduce((a,b)=>a+b,0)/3).toFixed(2)));
+  finalScores.team = TEAM_DIMS.map((_,d) => parseFloat((rawTeam.slice(d*3,d*3+3).reduce((a,b)=>a+b,0)/3).toFixed(2)));
+
+  showLoading('Saving your results…');
+
+  // If Post-Test, try to fetch Pre-Test scores first
+  if (selectedWave === 'Post-Test') {
+    await fetchPreTestScores();
+  }
+
+  // Log to Google Sheet
+  await logToSheet();
+
+  hideLoading();
+  buildResults();
+  showPage('page-results');
+}
+
+// ─────────────────────────────────────────────────────────────
+// GOOGLE SHEET INTEGRATION
+// ─────────────────────────────────────────────────────────────
+async function fetchPreTestScores() {
+  if (GOOGLE_SHEET_URL === 'PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE') return;
+  try {
+    const url = `${GOOGLE_SHEET_URL}?action=lookup&email=${encodeURIComponent(studentEmail)}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.found) {
+      preTestScores = { self: data.self, team: data.team };
+    }
+  } catch(e) {
+    console.warn('Pre-test lookup failed:', e);
+  }
+}
+
+async function logToSheet() {
+  if (GOOGLE_SHEET_URL === 'PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE') {
+    showSheetStatus('warning', '⚠ Google Sheet not connected yet. Your results are displayed below but not saved to the course record. Please use the Email button to send your scores to your instructor.');
+    return;
+  }
+  try {
+    const payload = {
+      action: 'log',
+      name: studentName,
+      email: studentEmail,
+      cohort: cohortLabel,
+      wave: selectedWave,
+      timestamp: new Date().toISOString(),
+      self: finalScores.self,
+      team: finalScores.team
+    };
+    const res = await fetch(GOOGLE_SHEET_URL, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.status === 'ok') {
+      showSheetStatus('success', '✓ Your results have been saved to the course record.');
+    } else {
+      throw new Error('Sheet returned error');
+    }
+  } catch(e) {
+    showSheetStatus('error', '✗ Could not save to the course record automatically. Please use the Email button below to send your scores to your instructor.');
+  }
+}
+
+function showSheetStatus(type, msg) {
+  const el = document.getElementById('sheet-status');
+  el.className = `status-card ${type}`;
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+// ─────────────────────────────────────────────────────────────
+// BUILD RESULTS
+// ─────────────────────────────────────────────────────────────
+function buildResults() {
+  const today = new Date().toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' });
+  const isPost = selectedWave === 'Post-Test';
+  const hasOverlay = isPost && preTestScores !== null;
+
+  document.getElementById('result-name').textContent = studentName;
+  document.getElementById('result-date').textContent = cohortLabel ? `${cohortLabel} · ${today}` : today;
+
+  const badge = document.getElementById('result-wave-badge');
+  badge.textContent = selectedWave;
+  badge.className = `wave-badge ${isPost ? 'post' : 'pre'}`;
+
+  // Legend
+  const leg = document.getElementById('legend-area');
+  if (hasOverlay) {
+    leg.innerHTML = `
+      <div class="legend-item"><div class="legend-dash"></div>Pre-Test baseline</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:rgba(242,98,39,0.5);"></div>Post-Test SELF</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:rgba(70,98,137,0.5);"></div>Post-Test TEAM</div>`;
+  } else {
+    leg.innerHTML = `
+      <div class="legend-item"><div class="legend-swatch" style="background:rgba(242,98,39,0.5);"></div>SIMPLER SELF</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:rgba(70,98,137,0.5);"></div>SIMPLER TEAM</div>`;
+  }
+
+  // Missing pre-test warning
+  if (isPost && !hasOverlay) {
+    showSheetStatus('warning', '⚠ No Pre-Test record was found for this email address. Your Post-Test scores are shown as a single snapshot. If you used a different email for your Pre-Test, contact your instructor.');
+  }
+
+  buildScoresGrid(hasOverlay);
+  buildScoresTable(hasOverlay);
+  buildInsight(hasOverlay);
+  drawSpider(hasOverlay);
+}
+
+function buildScoresGrid(hasOverlay) {
+  const el = document.getElementById('scores-grid');
+  let html = '';
+  SELF_DIMS.forEach((d,i) => {
+    const delta = hasOverlay ? ` <span style="font-size:10px;color:${finalScores.self[i]>=preTestScores.self[i]?'#27ae60':'#e74c3c'}">${finalScores.self[i]>=preTestScores.self[i]?'▲':'▼'}${Math.abs(finalScores.self[i]-preTestScores.self[i]).toFixed(1)}</span>` : '';
+    html += `<div class="score-tile self"><div class="tl">${d.key}</div><div class="tv">${finalScores.self[i].toFixed(1)}${delta}</div></div>`;
+  });
+  TEAM_DIMS.forEach((d,i) => {
+    const delta = hasOverlay ? ` <span style="font-size:10px;color:${finalScores.team[i]>=preTestScores.team[i]?'#27ae60':'#e74c3c'}">${finalScores.team[i]>=preTestScores.team[i]?'▲':'▼'}${Math.abs(finalScores.team[i]-preTestScores.team[i]).toFixed(1)}</span>` : '';
+    html += `<div class="score-tile team"><div class="tl">${d.key}</div><div class="tv">${finalScores.team[i].toFixed(1)}${delta}</div></div>`;
+  });
+  el.innerHTML = html;
+}
+
+function buildScoresTable(hasOverlay) {
+  const tbody = document.getElementById('scores-table-body');
+  const header = document.getElementById('table-score-header');
+  header.textContent = hasOverlay ? 'Pre → Post' : 'Score';
+  let html = '';
+
+  const addRow = (label, score, preScore, color) => {
+    const pct = (score/5)*100;
+    const prePct = preScore !== undefined ? (preScore/5)*100 : null;
+    const deltaStr = preScore !== undefined
+      ? `<span style="font-size:11px;color:${score>=preScore?'#27ae60':'#e74c3c'};margin-left:6px;">${score>=preScore?'+':''}${(score-preScore).toFixed(1)}</span>`
+      : '';
+    html += `<tr>
+      <td>${label}</td>
+      <td><div class="score-bar-wrap">
+        <div class="score-bar">
+          ${prePct!==null?`<div class="score-bar-fill" style="width:${prePct}%;background:${color};opacity:0.3;"></div>`:''}
+          <div class="score-bar-fill" style="width:${pct}%;background:${color};margin-top:${prePct!==null?'-6px':'0'};"></div>
+        </div>
+      </div></td>
+      <td><span class="score-val" style="color:${color};">${score.toFixed(1)}${deltaStr}</span></td>
+    </tr>`;
+  };
+
+  html += `<tr><td colspan="3" style="padding:10px 16px;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#F26227;background:rgba(242,98,39,0.05);">SIMPLER SELF</td></tr>`;
+  SELF_DIMS.forEach((d,i) => addRow(`${d.key} — ${d.label}`, finalScores.self[i], hasOverlay?preTestScores.self[i]:undefined, '#F26227'));
+  html += `<tr><td colspan="3" style="padding:10px 16px;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#466289;background:rgba(70,98,137,0.05);">SIMPLER TEAM</td></tr>`;
+  TEAM_DIMS.forEach((d,i) => addRow(`${d.key} — ${d.label}`, finalScores.team[i], hasOverlay?preTestScores.team[i]:undefined, '#466289'));
+
+  tbody.innerHTML = html;
+}
+
+function buildInsight(hasOverlay) {
+  const titleEl = document.getElementById('insight-title');
+  const bodyEl = document.getElementById('insight-body');
+  const allScores = [...finalScores.self, ...finalScores.team];
+  const allDims = [...SELF_DIMS, ...TEAM_DIMS];
+
+  const indexed = allScores.map((s,i) => ({ s, l:allDims[i].label, desc:allDims[i].desc, half:i<7?'SELF':'TEAM' }));
+  const sorted = [...indexed].sort((a,b)=>a.s-b.s);
+  const lowest = sorted.slice(0,2);
+  const highest = sorted[sorted.length-1];
+
+  if (!hasOverlay) {
+    titleEl.textContent = 'Reflection prompts';
+    bodyEl.innerHTML = `
+      <p><strong>Your highest-scoring dimension is ${highest.l} (${highest.s.toFixed(1)}/5) in the ${highest.half} half.</strong> This is a leadership strength to build from. How are you currently using this strength, and where could you lean on it more intentionally?</p>
+      <p><strong>Two dimensions with room to grow: ${lowest[0].l} (${lowest[0].s.toFixed(1)}/5) and ${lowest[1].l} (${lowest[1].s.toFixed(1)}/5).</strong> ${lowest[0].desc} What would it look like to invest deliberately in one of these areas over the next several weeks?</p>
+      <p>Where do you notice the biggest gap between your SELF scores and your TEAM scores? What might that gap be telling you about your leadership right now?</p>`;
+  } else {
+    titleEl.textContent = 'Growth reflection';
+    const allPre = [...preTestScores.self, ...preTestScores.team];
+    const deltas = allScores.map((s,i) => ({ delta:s-allPre[i], l:allDims[i].label, pre:allPre[i], post:s }));
+    const gains = deltas.filter(d=>d.delta>0.05).sort((a,b)=>b.delta-a.delta);
+    const declines = deltas.filter(d=>d.delta<-0.05).sort((a,b)=>a.delta-b.delta);
+
+    let html = '';
+    if (gains.length > 0) {
+      html += `<p><strong>Strongest growth: ${gains[0].l} (+${gains[0].delta.toFixed(1)} pts, ${gains[0].pre.toFixed(1)} → ${gains[0].post.toFixed(1)}).</strong> What specific practices or experiences from this course contributed to this shift?</p>`;
+      if (gains.length > 1) html += `<p><strong>Also improved:</strong> ${gains.slice(1,3).map(g=>`${g.l} (+${g.delta.toFixed(1)})`).join(', ')}.</p>`;
+    } else {
+      html += `<p><strong>Your scores held steady across the course.</strong> Stability can mean consistency — or it can mean there's still room to unlock. What felt like the biggest barrier to growth in any one dimension?</p>`;
+    }
+    if (declines.length > 0) {
+      html += `<p><strong>Worth reflecting on: ${declines[0].l} (${declines[0].delta.toFixed(1)} pts).</strong> Sometimes scores drop as awareness increases — you may simply see this dimension more clearly now than you did in Week 1. What does this shift mean for you?</p>`;
+    }
+    html += `<p>Looking at your full profile — what is the single most important leadership behavior you want to keep developing after this course?</p>`;
+    bodyEl.innerHTML = html;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// SPIDER DIAGRAM
+// ─────────────────────────────────────────────────────────────
+function drawSpider(hasOverlay) {
+  const canvas = document.getElementById('spiderCanvas');
+  const ctx = canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height, cx=W/2, cy=H/2, R=188, N=14;
+  const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const gridCol = isDark?'rgba(255,255,255,0.07)':'rgba(0,0,0,0.07)';
+  const axisCol = isDark?'rgba(255,255,255,0.12)':'rgba(0,0,0,0.1)';
+  const textCol = isDark?'rgba(255,255,255,0.6)':'rgba(0,0,0,0.58)';
+
+  ctx.clearRect(0,0,W,H);
+
+  function angle(i) { return (Math.PI*2*i/N)-Math.PI/2; }
+  function pt(i,r) { const a=angle(i); return {x:cx+r*Math.cos(a),y:cy+r*Math.sin(a)}; }
+  function clamp(v) { return Math.min(5,Math.max(1,v||1)); }
+
+  // Rings
+  for (let lv=1;lv<=5;lv++) {
+    const r=(lv/5)*R;
+    ctx.beginPath();
+    for (let i=0;i<N;i++){const p=pt(i,r);i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y);}
+    ctx.closePath(); ctx.strokeStyle=gridCol; ctx.lineWidth=0.8; ctx.stroke();
+    ctx.fillStyle=isDark?'rgba(255,255,255,0.2)':'rgba(0,0,0,0.2)';
+    ctx.font='9px system-ui'; ctx.textAlign='center';
+    ctx.fillText(lv,cx+3,cy-r+3);
+  }
+
+  // Axes
+  for (let i=0;i<N;i++){const p=pt(i,R);ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(p.x,p.y);ctx.strokeStyle=axisCol;ctx.lineWidth=0.8;ctx.stroke();}
+
+  // Dividers
+  ctx.setLineDash([4,3]); ctx.strokeStyle=isDark?'rgba(255,255,255,0.18)':'rgba(0,0,0,0.14)'; ctx.lineWidth=1.2;
+  [0,7].forEach(i=>{const p=pt(i,R+12);ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(p.x,p.y);ctx.stroke();});
+  ctx.setLineDash([]);
+
+  function drawPolygon(selfArr, teamArr, fillOpacity, strokeColor, strokeWidth, dashed) {
+    const all=[...selfArr,...teamArr];
+    if (dashed) {
+      ctx.beginPath();
+      for(let i=0;i<N;i++){const r=(clamp(all[i])/5)*R;const p=pt(i,r);i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y);}
+      ctx.closePath(); ctx.strokeStyle=strokeColor; ctx.lineWidth=strokeWidth;
+      ctx.setLineDash([5,4]); ctx.stroke(); ctx.setLineDash([]); return;
+    }
+    ['left','right'].forEach(side=>{
+      ctx.save(); ctx.beginPath();
+      if(side==='left') ctx.rect(0,0,cx,H); else ctx.rect(cx,0,cx,H);
+      ctx.clip(); ctx.beginPath();
+      for(let i=0;i<N;i++){const r=(clamp(all[i])/5)*R;const p=pt(i,r);i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y);}
+      ctx.closePath();
+      ctx.fillStyle=side==='left'?`rgba(242,98,39,${fillOpacity})`:`rgba(70,98,137,${fillOpacity})`;
+      ctx.fill(); ctx.restore();
+    });
+    ctx.beginPath();
+    for(let i=0;i<N;i++){const r=(clamp(all[i])/5)*R;const p=pt(i,r);i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y);}
+    ctx.closePath(); ctx.strokeStyle=strokeColor; ctx.lineWidth=strokeWidth; ctx.stroke();
+    for(let i=0;i<N;i++){const r=(clamp(all[i])/5)*R;const p=pt(i,r);ctx.beginPath();ctx.arc(p.x,p.y,3.5,0,Math.PI*2);ctx.fillStyle=i<7?'#F26227':'#466289';ctx.fill();}
+  }
+
+  if (hasOverlay) {
+    drawPolygon(preTestScores.self, preTestScores.team, 0, isDark?'rgba(255,255,255,0.35)':'rgba(80,80,80,0.45)', 1.5, true);
+    drawPolygon(finalScores.self, finalScores.team, 0.2, isDark?'rgba(255,255,255,0.5)':'rgba(0,0,0,0.3)', 2, false);
+  } else {
+    drawPolygon(finalScores.self, finalScores.team, 0.18, isDark?'rgba(255,255,255,0.4)':'rgba(0,0,0,0.25)', 1.5, false);
+  }
+
+  // Labels
+  const allDims=[...SELF_DIMS,...TEAM_DIMS];
+  for(let i=0;i<N;i++){
+    const a=angle(i); const p={x:cx+(R+26)*Math.cos(a),y:cy+(R+26)*Math.sin(a)};
+    const dim=allDims[i]; const isSelf=i<7;
+    ctx.save(); ctx.translate(p.x,p.y); ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.font='700 12px system-ui'; ctx.fillStyle=isSelf?'#F26227':'#466289'; ctx.fillText(dim.key,0,-9);
+    ctx.font='400 9px system-ui'; ctx.fillStyle=textCol;
+    const words=dim.label.split(' ');
+    if(words.length<=2){ctx.fillText(dim.label,0,3);}
+    else{ctx.fillText(words.slice(0,2).join(' '),0,2);ctx.fillText(words.slice(2).join(' '),0,13);}
+    ctx.restore();
+  }
+
+  // Half labels
+  ctx.font='600 11px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillStyle='rgba(242,98,39,0.55)'; ctx.fillText('SELF',cx-R*0.52,cy+6);
+  ctx.fillStyle='rgba(70,98,137,0.55)'; ctx.fillText('TEAM',cx+R*0.52,cy+6);
+
+  // Footer text
+  const today=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  ctx.font='400 10px system-ui'; ctx.fillStyle=isDark?'rgba(255,255,255,0.3)':'rgba(0,0,0,0.28)';
+  ctx.textAlign='center'; ctx.textBaseline='bottom';
+  let y=H-6; ctx.fillText(today,cx,y); y-=13;
+  if(selectedWave){ctx.fillText(selectedWave,cx,y);y-=13;}
+  if(cohortLabel){ctx.fillText(cohortLabel,cx,y);y-=13;}
+  ctx.font='600 11px system-ui'; ctx.fillStyle=isDark?'rgba(255,255,255,0.5)':'rgba(0,0,0,0.45)';
+  ctx.fillText(studentName,cx,y);
+}
+
+// ─────────────────────────────────────────────────────────────
+// EMAIL RESULTS
+// ─────────────────────────────────────────────────────────────
+function sendEmailResults() {
+  const today = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  const isPost = selectedWave === 'Post-Test';
+  const hasOverlay = isPost && preTestScores !== null;
+
+  let body = `SIMPLER Leader/ship Diagnostic — ${selectedWave} Results\n`;
+  body += `Name: ${studentName}\n`;
+  body += `Email: ${studentEmail}\n`;
+  if (cohortLabel) body += `Course: ${cohortLabel}\n`;
+  body += `Date: ${today}\n\n`;
+
+  body += `── SIMPLER SELF ──────────────────────\n`;
+  SELF_DIMS.forEach((d,i) => {
+    const pre = hasOverlay ? ` (Pre: ${preTestScores.self[i].toFixed(1)}, Post: ${finalScores.self[i].toFixed(1)}, Δ ${(finalScores.self[i]-preTestScores.self[i]).toFixed(1)})` : ` ${finalScores.self[i].toFixed(1)} / 5`;
+    body += `${d.key} — ${d.label}:${pre}\n`;
+  });
+
+  body += `\n── SIMPLER TEAM ──────────────────────\n`;
+  TEAM_DIMS.forEach((d,i) => {
+    const pre = hasOverlay ? ` (Pre: ${preTestScores.team[i].toFixed(1)}, Post: ${finalScores.team[i].toFixed(1)}, Δ ${(finalScores.team[i]-preTestScores.team[i]).toFixed(1)})` : ` ${finalScores.team[i].toFixed(1)} / 5`;
+    body += `${d.key} — ${d.label}:${pre}\n`;
+  });
+
+  body += `\n──────────────────────────────────────\n`;
+  body += `Dr. Kai Degner\nSIMPLER Leadership LLC\nsimplerleadership.com\n\n`;
+  body += `Note: Save this email — you will need the same email address (${studentEmail}) to complete your Post-Test and see your growth overlay.`;
+
+  const subject = encodeURIComponent(`Your SIMPLER Leadership Diagnostic Results — ${selectedWave}`);
+  const encodedBody = encodeURIComponent(body);
+  const cc = encodeURIComponent(INSTRUCTOR_EMAIL);
+
+  window.location.href = `mailto:${studentEmail}?cc=${cc}&subject=${subject}&body=${encodedBody}`;
+}
+
+// ─────────────────────────────────────────────────────────────
+// DOWNLOAD
+// ─────────────────────────────────────────────────────────────
+function downloadPNG() {
+  const canvas = document.getElementById('spiderCanvas');
+  const link = document.createElement('a');
+  link.download = `${studentName.replace(/\s+/g,'-')}-SLD-${selectedWave.replace(/\s+/g,'-')}.png`;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+</script>
+</body>
+</html>
