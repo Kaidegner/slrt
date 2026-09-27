@@ -1,0 +1,1337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SIMPLER Leadership Reflection Tool · Dr. Kai Degner</title>
+<style>
+/* ── RESET + VARS ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --orange: #F26227;
+  --gold:   #FDB639;
+  --blue:   #466289;
+  --text:   #1a1a1a;
+  --text2:  #555;
+  --text3:  #888;
+  --border: #e0ddd8;
+  --bg:     #fff;
+  --surf:   #f7f6f4;
+  --card:   #fff;
+  --r:  8px;
+  --rl: 12px;
+}
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+       background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* ── TOPBAR ── */
+.topbar { background: var(--orange); padding: 13px 22px; display: flex; align-items: center; gap: 11px; }
+.tb-icon { width: 32px; height: 32px; background: rgba(255,255,255,0.22); border-radius: 7px;
+           display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.tb-title { font-size: 15px; font-weight: 600; color: #fff; letter-spacing: -0.01em; }
+.tb-sub   { font-size: 11px; color: rgba(255,255,255,0.78); margin-top: 1px; }
+
+/* ── PAGE SYSTEM ── */
+.page { display: none; }
+.page.active { display: block; }
+
+/* ── LOADING ── */
+.loading-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+  display: none; align-items: center; justify-content: center; z-index: 999; }
+.loading-box { background: var(--card); border-radius: var(--rl); padding: 28px 36px; text-align: center; }
+.loading-box p { font-size: 14px; color: var(--text2); margin-top: 10px; }
+.spinner { width: 34px; height: 34px; border: 3px solid var(--border);
+  border-top-color: var(--orange); border-radius: 50%;
+  animation: spin .75s linear infinite; margin: 0 auto; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── GATE ── */
+.gate-wrap { max-width: 640px; margin: 0 auto; padding: 42px 22px 60px; }
+.gate-wrap h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 10px; }
+.gate-wrap h1 span { color: var(--orange); }
+.gate-wrap .lead { font-size: 14px; color: var(--text2); line-height: 1.7; margin-bottom: 6px; }
+.gate-wrap .sub-lead { font-size: 13px; color: var(--text3); line-height: 1.6; margin-bottom: 22px; }
+.meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 11px;
+  background: var(--surf); border: 1px solid var(--border); border-radius: var(--rl);
+  padding: 16px 18px; margin-bottom: 22px; }
+.meta-item .ml { font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text3); margin-bottom: 2px; }
+.meta-item .mv { font-size: 13px; color: var(--text); font-weight: 500; }
+.field-group { margin-bottom: 13px; }
+.field-label { font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+  color: var(--text3); display: block; margin-bottom: 5px; }
+.field-input { width: 100%; border: 1px solid var(--border); border-radius: var(--r);
+  padding: 10px 13px; font-size: 14px; background: var(--card); color: var(--text);
+  outline: none; transition: border-color .15s; }
+.field-input:focus { border-color: var(--orange); }
+.field-input.error { border-color: #c0392b; }
+.privacy-note { font-size: 11px; color: var(--text3); line-height: 1.65; padding: 11px 14px;
+  border: 1px solid var(--border); border-radius: var(--r); margin: 14px 0; }
+.error-msg { background: rgba(220,50,50,.08); border: 1px solid rgba(220,50,50,.25);
+  border-radius: var(--r); padding: 10px 14px; font-size: 13px; color: #c0392b;
+  margin-bottom: 13px; display: none; }
+.btn-primary { width: 100%; padding: 13px; background: var(--orange); color: #fff;
+  border: none; border-radius: var(--rl); font-size: 15px; font-weight: 600;
+  cursor: pointer; transition: opacity .15s; margin-top: 6px; }
+.btn-primary:hover { opacity: .88; }
+.btn-secondary { padding: 11px 20px; background: transparent; color: var(--text2);
+  border: 1px solid var(--border); border-radius: var(--rl); font-size: 14px; cursor: pointer; }
+
+/* ── SURVEY ── */
+.survey-wrap { max-width: 760px; margin: 0 auto; padding: 26px 18px 110px; }
+.progress-label { font-size: 12px; color: var(--text3); margin-bottom: 6px;
+  display: flex; justify-content: space-between; }
+.progress-bar-wrap { background: var(--surf); border-radius: 99px; height: 5px;
+  margin-bottom: 26px; overflow: hidden; }
+.progress-bar-fill { height: 100%; background: var(--orange); border-radius: 99px; transition: width .3s ease; }
+
+.section-banner { padding: 13px 17px; border-radius: var(--rl); margin-bottom: 18px;
+  display: flex; align-items: flex-start; gap: 11px; }
+.section-banner.self { background: rgba(242,98,39,.07); border: 1px solid rgba(242,98,39,.22); }
+.section-banner.team { background: rgba(70,98,137,.07); border: 1px solid rgba(70,98,137,.22); }
+.sb-icon { width: 33px; height: 33px; border-radius: 50%; display: flex; align-items: center;
+  justify-content: center; font-size: 13px; font-weight: 800; flex-shrink: 0; margin-top: 2px; }
+.section-banner.self .sb-icon { background: rgba(242,98,39,.14); color: var(--orange); }
+.section-banner.team .sb-icon { background: rgba(70,98,137,.14); color: var(--blue); }
+.sb-title { font-size: 14px; font-weight: 700; margin-bottom: 3px; }
+.section-banner.self .sb-title { color: var(--orange); }
+.section-banner.team .sb-title { color: var(--blue); }
+.sb-desc { font-size: 12px; color: var(--text2); line-height: 1.5; }
+
+.dim-block { margin-bottom: 22px; background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--rl); overflow: hidden; }
+.dim-header { padding: 10px 15px; display: flex; align-items: flex-start; gap: 8px; border-bottom: 1px solid var(--border); }
+.dim-badge { width: 23px; height: 23px; border-radius: 50%; display: flex; align-items: center;
+  justify-content: center; font-size: 10px; font-weight: 800; flex-shrink: 0; margin-top: 1px; }
+.dim-badge.self { background: rgba(242,98,39,.11); color: var(--orange); }
+.dim-badge.team { background: rgba(70,98,137,.11); color: var(--blue); }
+.dim-name { font-size: 13px; font-weight: 600; color: var(--text); }
+.dim-def  { font-size: 11px; color: var(--text3); display: block; margin-top: 2px; line-height: 1.4; }
+
+.item-group-label { padding: 7px 15px 3px; font-size: 9px; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--text3); }
+.item-row { padding: 11px 15px 13px; border-bottom: 1px solid var(--border); }
+.item-row:last-child { border-bottom: none; }
+.item-text { font-size: 13px; color: var(--text); line-height: 1.55; margin-bottom: 9px; }
+.item-num  { font-size: 10px; color: var(--text3); margin-right: 4px; }
+
+/* 7-point likert — grid layout for consistent mobile rendering */
+.likert-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.likert-opt input[type="radio"] { display: none; }
+.likert-opt label { display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 7px 1px 6px; border: 1px solid var(--border); border-radius: 6px;
+  cursor: pointer; font-size: 8px; color: var(--text3); text-align: center; line-height: 1.2;
+  transition: all .12s; background: var(--surf); user-select: none; }
+.likert-opt label .opt-n { font-size: 14px; font-weight: 700; color: var(--text3); line-height: 1; }
+
+/* Practice items — orange selection */
+.likert-opt.p input:checked + label { border-color: var(--orange); background: rgba(242,98,39,.08); color: var(--orange); }
+.likert-opt.p input:checked + label .opt-n { color: var(--orange); }
+.likert-opt.p label:hover { border-color: rgba(242,98,39,.5); }
+
+/* Efficacy items — blue selection */
+.likert-opt.e input:checked + label { border-color: var(--blue); background: rgba(70,98,137,.08); color: var(--blue); }
+.likert-opt.e input:checked + label .opt-n { color: var(--blue); }
+.likert-opt.e label:hover { border-color: rgba(70,98,137,.5); }
+
+/* Separator between practice and efficacy within a dimension */
+.eff-sep { display: flex; align-items: center; gap: 10px; padding: 8px 15px 2px;
+  border-top: 1px solid var(--border); margin-top: 4px; }
+.eff-sep-line { flex: 1; height: 1px; background: var(--border); }
+.eff-sep-label { font-size: 9px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--blue); }
+
+/* Survey nav bar */
+.survey-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--card);
+  border-top: 1px solid var(--border); padding: 12px 18px;
+  display: flex; justify-content: space-between; align-items: center; gap: 10px; z-index: 100; }
+.nav-info { font-size: 12px; color: var(--text3); text-align: center; flex: 1; }
+.btn-nav { padding: 10px 20px; border: none; border-radius: var(--rl); font-size: 13px;
+  font-weight: 600; cursor: pointer; transition: opacity .15s; white-space: nowrap; }
+.btn-nav.primary { background: var(--orange); color: #fff; }
+.btn-nav.primary:hover { opacity: .88; }
+.btn-nav.ghost  { background: transparent; border: 1px solid var(--border); color: var(--text2); }
+
+/* ── RESULTS ── */
+.results-wrap { max-width: 680px; margin: 0 auto; padding: 34px 18px 64px; }
+.results-header { text-align: center; margin-bottom: 26px; }
+.wave-badge { display: inline-block; padding: 3px 12px; border-radius: 99px;
+  font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 9px; }
+.wave-badge.pre  { background: rgba(242,98,39,.1); color: var(--orange); }
+.wave-badge.post { background: rgba(70,98,137,.1); color: var(--blue); }
+.result-name { font-size: 20px; font-weight: 700; color: var(--orange); margin-bottom: 3px; }
+.results-header h2 { font-size: 21px; font-weight: 700; letter-spacing: -.01em; margin-bottom: 4px; }
+.result-date { font-size: 12px; color: var(--text3); }
+
+.status-card { border-radius: var(--r); padding: 10px 14px; font-size: 13px; line-height: 1.6;
+  margin-bottom: 14px; display: none; }
+.status-card.success { background: rgba(39,174,96,.08); border: 1px solid rgba(39,174,96,.3); color: #27ae60; }
+.status-card.warning { background: rgba(253,182,57,.1); border: 1px solid rgba(253,182,57,.4); color: #b8860b; }
+.status-card.error   { background: rgba(220,50,50,.08); border: 1px solid rgba(220,50,50,.25); color: #c0392b; }
+
+.canvas-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--rl);
+  padding: 18px; display: flex; flex-direction: column; align-items: center; gap: 13px; margin-bottom: 22px;
+  overflow-x: auto; }
+canvas { max-width: 100%; min-width: 340px; height: auto; display: block; }
+.spider-legend { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text2); }
+.legend-swatch { width: 10px; height: 10px; border-radius: 2px; }
+.legend-dash { width: 16px; height: 0; border-top: 2px dashed #888; }
+
+.results-section { margin-bottom: 22px; }
+.section-title { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--text3); margin-bottom: 11px; }
+
+/* Shared table style */
+.data-table { background: var(--card); border: 1px solid var(--border); border-radius: var(--rl); overflow: hidden; }
+.data-table table { width: 100%; border-collapse: collapse; }
+.data-table th { padding: 8px 13px; font-size: 10px; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--text3); text-align: left;
+  border-bottom: 1px solid var(--border); background: var(--surf); }
+.data-table td { padding: 9px 13px; font-size: 12px; color: var(--text);
+  border-bottom: 1px solid var(--border); vertical-align: middle; }
+.data-table tr:last-child td { border-bottom: none; }
+.data-table .sec-row td { font-size: 10px; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; padding: 7px 13px; }
+.score-bar-wrap { display: flex; align-items: center; gap: 7px; }
+.score-bar { flex: 1; height: 5px; background: var(--surf); border-radius: 99px; overflow: hidden; min-width: 30px; }
+.score-bar-fill { height: 100%; border-radius: 99px; }
+
+/* Quadrant row highlights */
+.data-table tr.exec-gap  td { background: rgba(242,98,39,.04); }
+.data-table tr.dev-prior td { background: rgba(70,98,137,.04); }
+
+/* Quadrant badges */
+.q-badge { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 9px;
+  font-weight: 700; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; }
+.q-badge.strength   { background: rgba(39,174,96,.13); color: #27ae60; }
+.q-badge.exec-gap   { background: rgba(242,98,39,.13); color: var(--orange); }
+.q-badge.unconscious{ background: rgba(253,182,57,.18); color: #b8860b; }
+.q-badge.dev-prior  { background: rgba(70,98,137,.13); color: var(--blue); }
+
+.q-legend { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 11px; }
+.q-legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text2); }
+
+/* Reflection card */
+.reflection-card { background: var(--surf); border: 1px solid var(--border); border-radius: var(--rl); padding: 18px 20px; }
+.prompt-item { display: flex; gap: 11px; align-items: flex-start; margin-bottom: 13px; }
+.prompt-item:last-child { margin-bottom: 0; }
+.prompt-num { width: 22px; height: 22px; border-radius: 50%; background: var(--orange); color: #fff;
+  font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 1px; }
+.prompt-item p { font-size: 14px; color: var(--text); line-height: 1.55; }
+
+.debrief-note { background: rgba(70,98,137,.07); border: 1px solid rgba(70,98,137,.22);
+  border-radius: var(--r); padding: 13px 16px; font-size: 13px; color: var(--blue);
+  margin-bottom: 18px; line-height: 1.6; }
+.debrief-note a { color: var(--blue); font-weight: 600; }
+
+.btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 22px; }
+.btn-row .btn-primary { flex: 1; margin-top: 0; }
+
+.footer-note { font-size: 11px; color: var(--text3); text-align: center; line-height: 1.7;
+  padding-top: 18px; border-top: 1px solid var(--border); }
+
+/* ── MOBILE ── */
+@media (max-width: 480px) {
+  .meta-grid { grid-template-columns: 1fr; }
+  .likert-opt label { font-size: 7px; padding: 6px 1px 5px; }
+  .likert-opt label .opt-n { font-size: 12px; }
+  .survey-nav { padding: 9px 12px; }
+  .btn-nav { padding: 9px 14px; font-size: 12px; }
+}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loading-overlay">
+  <div class="loading-box">
+    <div class="spinner"></div>
+    <p id="loading-msg">Loading…</p>
+  </div>
+</div>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="tb-icon">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="9" stroke="white" stroke-width="2"/>
+      <path d="M12 7v5.5l3.5 2" stroke="white" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+  </div>
+  <div>
+    <div class="tb-title">SIMPLER Leadership Reflection Tool</div>
+    <div class="tb-sub">Dr. Kai Degner · SIMPLER Leadership LLC · simplerleadership.com</div>
+  </div>
+</div>
+
+<!-- ════════════════ PAGE: GATE ════════════════ -->
+<div class="page active" id="page-gate">
+  <div class="gate-wrap">
+    <h1>SIMPLER Leader/ship <span>Reflection Tool</span></h1>
+    <p class="lead">The SIMPLER Leadership Reflection Tool lets you consider your leadership across 14 dimensions — 7 on how you lead yourself, 7 on how you lead others. Your results appear as a radar profile with coaching quadrants for each dimension.</p>
+    <p class="sub-lead">Answer based on what you actually do, not what you think you should do. There are no right or wrong answers. This assessment takes approximately 15-20 minutes at a careful pace.</p>
+
+    <div class="meta-grid">
+      <div class="meta-item"><div class="ml">Items</div><div class="mv">84 questions</div></div>
+      <div class="meta-item"><div class="ml">Time</div><div class="mv">22–30 minutes</div></div>
+      <div class="meta-item"><div class="ml">Scale</div><div class="mv">1 (Never) → 7 (Always)</div></div>
+      <div class="meta-item"><div class="ml">Output</div><div class="mv">Spider profile + coaching quadrants</div></div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="gateName">First name</label>
+      <input class="field-input" id="gateName" type="text" placeholder="e.g. Alex" autocomplete="given-name"/>
+    </div>
+    <div class="field-group">
+      <label class="field-label" for="gateEmail">Email address</label>
+      <input class="field-input" id="gateEmail" type="email" placeholder="e.g. alex@company.com" autocomplete="email"/>
+      <div style="font-size:11px;color:#b8860b;background:rgba(253,182,57,.1);border:1px solid rgba(253,182,57,.4);border-radius:6px;padding:9px 12px;margin-top:7px;line-height:1.5;">
+        ⚠ <strong>Use the same email for both Pre-Test and Post-Test</strong> so your growth overlay is generated automatically.
+      </div>
+    </div>
+
+    <div class="privacy-note">
+      Your responses are stored anonymously for pre- and post-test purposes. Your name and email are never shared or sold. Results are sent to the email you provide. Unsubscribe any time.
+    </div>
+
+    <div id="gate-error" class="error-msg"></div>
+    <button class="btn-primary" onclick="handleGateSubmit()">Begin the Reflection Tool →</button>
+  </div>
+</div>
+
+<!-- ════════════════ PAGE: SURVEY ════════════════ -->
+<div class="page" id="page-survey">
+  <div class="survey-wrap">
+    <div class="progress-label">
+      <span id="progress-text">0 of 84 answered</span>
+      <span id="progress-pct">0%</span>
+    </div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progress-fill" style="width:0%"></div>
+    </div>
+    <div id="survey-error" class="error-msg"></div>
+    <div id="survey-body"></div>
+  </div>
+
+  <div class="survey-nav">
+    <button class="btn-nav ghost" id="btn-back" onclick="goBackSection()" style="display:none">← Back</button>
+    <div class="nav-info" id="nav-info">Part 1 of 2: SIMPLER SELF</div>
+    <button class="btn-nav primary" id="btn-next" onclick="advanceSurvey()">Continue to Part 2 →</button>
+  </div>
+</div>
+
+<!-- ════════════════ PAGE: RESULTS ════════════════ -->
+<div class="page" id="page-results">
+  <div class="results-wrap">
+
+    <div class="results-header">
+      <div class="wave-badge pre" id="result-wave-badge">Pre-Test</div>
+      <div class="result-name" id="result-name"></div>
+      <h2>Your Leadership Reflection Profile</h2>
+      <div class="result-date" id="result-date"></div>
+    </div>
+
+    <div id="sheet-status" class="status-card"></div>
+
+    <div class="canvas-card">
+      <canvas id="spiderCanvas" width="680" height="680" style="max-width:100%;height:auto;"></canvas>
+      <div class="spider-legend" id="spider-legend"></div>
+    </div>
+
+    <div class="results-section">
+      <div class="section-title">Practice &amp; Efficacy Scores — P = practice (1–7) · E = efficacy (1–7)</div>
+      <div class="data-table" id="scores-table"></div>
+    </div>
+
+    <div class="results-section">
+      <div class="section-title">Coaching Quadrants — All 14 Dimensions</div>
+      <div class="q-legend">
+        <div class="q-legend-item"><span class="q-badge strength">STRENGTH</span> High practice, high confidence</div>
+        <div class="q-legend-item"><span class="q-badge exec-gap">EXECUTION GAP</span> Low practice, high confidence</div>
+        <div class="q-legend-item"><span class="q-badge unconscious">UNCONSCIOUS COMPETENCE</span> High practice, low confidence</div>
+        <div class="q-legend-item"><span class="q-badge dev-prior">DEVELOPMENT PRIORITY</span> Low practice, low confidence</div>
+      </div>
+      <div class="data-table" id="quadrant-table"></div>
+    </div>
+
+    <div class="results-section reflection-card">
+      <div class="section-title">Reflection Prompts</div>
+      <div class="prompt-item"><div class="prompt-num">1</div><p>What surprises you most about your spider?</p></div>
+      <div class="prompt-item"><div class="prompt-num">2</div><p>What did you already know?</p></div>
+      <div class="prompt-item"><div class="prompt-num">3</div><p>Which dimension are you most curious to develop?</p></div>
+    </div>
+
+    <div class="debrief-note">
+      📋 Your personalized debrief is available with a coaching call with Dr. Kai Degner of SIMPLER Leadership. Contact Kai at Kai@SimplerLeadership.com.
+      <a href="https://simplerleadership.com" target="_blank">simplerleadership.com</a>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-primary" onclick="downloadPNG()">⬇ Download diagram</button>
+      <button class="btn-secondary" onclick="retake()">Start over</button>
+    </div>
+
+    <div class="footer-note">
+      This is a structured self-reflection tool, not a validated psychometric instrument. Scores are interpreted relative to the 4.0 midpoint, not compared to other leaders.<br>
+      © SIMPLER Leadership LLC · Dr. Kai Degner · simplerleadership.com
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// CONFIG
+// Update APPS_SCRIPT_URL after deploying the new Apps Script v2
+// ══════════════════════════════════════════════════════════════
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyhvNIyThlsNvuKWx01qcDwd3UWXUfhjNJHYjipjcQleMwME-cKFcT2C8CrevkLzJKe3w/exec';
+
+// ══════════════════════════════════════════════════════════════
+// SCALE LABELS
+// ══════════════════════════════════════════════════════════════
+// V3: low/high sides now mirror off the true endpoints (Never/Always,
+// Not at all/Extremely) instead of off the middle words — "Almost Never" and
+// "Almost Always" are both one step off an extreme; the old "Very Rarely" /
+// "Very Often" pair was built off the middle words instead, which is why the
+// two sides read as uneven even though the word count matched.
+const P_SCALE = [
+  {v:1,l:'Never'},{v:2,l:'Almost Never'},{v:3,l:'Rarely'},
+  {v:4,l:'Sometimes'},{v:5,l:'Often'},{v:6,l:'Almost Always'},{v:7,l:'Always'}
+];
+const E_SCALE = [
+  {v:1,l:'Not at all'},{v:2,l:'Slightly'},{v:3,l:'Somewhat'},
+  {v:4,l:'Moderately'},{v:5,l:'Quite'},{v:6,l:'Very'},{v:7,l:'Extremely'}
+];
+
+// ══════════════════════════════════════════════════════════════
+// INSTRUMENT — 14 dimensions × 6 items each = 84 items
+// type 'p' = practice (frequency scale)
+// type 'e' = efficacy (confidence scale)
+// Global index: SELF dim d → items d*6 to d*6+5 (0–41)
+//               TEAM dim d → items 42+d*6 to 42+d*6+5 (42–83)
+// ══════════════════════════════════════════════════════════════
+const SELF_DIMS = [
+  {key:'S', label:'Self Identity',
+   def:'Leading from a clear sense of who you are; understanding that leadership is a process anyone can take part in, regardless of title.',
+   excellenceStatement:"A leader who has mastered Self Identity knows who they are before they walk into the room. Their team can predict how they'll act under pressure, because they don't shape-shift to match what the hierarchy rewards or what a particular audience wants to hear. Criticism might sting, but it doesn't move them off their values. Ask this leader where their leadership comes from, and they'll give you a real answer — not a mission-statement line, something they could actually explain to a new hire over coffee.",
+   learningOutcomes:["Identify which of the three CLT leadership roles (entrepreneurial, operational, enabling) a given situation calls for, and adjust their own behavior accordingly.", "Explain, in plain language, where their own leadership authority comes from when it isn't granted by title.", "Recognize the moments they've drifted from their own leadership identity under pressure, and reset to it."],
+   items:[
+    {text:"I step into a leadership role even when my job title doesn't call for it.", type:'p'},
+    {text:"I shift how I lead based on what the situation needs — whether that means sparking a new idea, keeping things on track, or helping someone else step up.", type:'p'},
+    {text:"I lead from a clear sense of who I am, even when others seem to expect me to show up differently.", type:'p'},
+    {text:"I help others see the ways they are already leading, even when they don't have a formal leadership title.", type:'p'},
+    {text:"I feel confident that I know how to lead from where I am, regardless of my position or title.", type:'e'},
+    {text:"I feel confident in my ability to see what kind of leadership a situation needs and adjust how I show up.", type:'e'},
+  ]},
+  {key:'I', label:'Integrity',
+   def:'Sustained alignment between what you say and what you do; building credibility through consistent follow-through and honest communication.',
+   excellenceStatement:"A leader who has mastered Integrity has a track record so consistent that nobody on the team bothers wondering if a promise will hold — that question got settled a long time ago, especially on the small commitments. When they miss one, they say so plainly, no explaining it away and no theater about owning it either. Sometimes honesty costs them something real — a client, an easy way out, a bit of pride — and they pay it anyway.",
+   learningOutcomes:["Distinguish between a commitment they kept and one they only intended to keep, using their own recent track record as evidence.", "Name a broken commitment directly, without softening it into an explanation, in a live conversation.", "Apply the same standard of candor and timeliness to themselves that they hold their team to."],
+   items:[
+    {text:"I follow through on commitments I make to my team, even small ones.", type:'p'},
+    {text:"I tell people difficult truths directly rather than softening them in ways that obscure the message.", type:'p'},
+    {text:"I hold myself to the same standards I hold others to — including on timeliness, quality, and candor.", type:'p'},
+    {text:"When I fall short of a commitment, I tend to explain the circumstances rather than simply owning the gap.", type:'p', reverse:true},
+    {text:"I feel confident in my ability to maintain alignment between my words and my actions over time.", type:'e'},
+    {text:"I feel confident that others see me as someone they can count on — not just some of the time, but consistently.", type:'e'},
+  ]},
+  {key:'M', label:'Make Meaning',
+   def:'Finding and sustaining purpose in your own work; helping your team connect day-to-day activities to larger significance; navigating uncertainty with clarity.',
+   excellenceStatement:"A leader who has mastered Make Meaning doesn't wait around for the work to feel important — they decide why it matters and say so, especially when things are hard. When the team is in a rough stretch, this leader can name what's still worth doing and why, out loud, with enough conviction that it actually steadies people. Nobody on this team has to ask ‘why does this matter?’ They can see the answer in how the leader shows up.",
+   learningOutcomes:["Give their team a real answer to “why does this work matter” during a genuine rough patch.", "Tell the difference between meaning that just shows up and meaning a leader builds on purpose — then build it.", "Hold onto their own sense of purpose through a hard stretch, instead of waiting for things to get easier first."],
+   items:[
+    {text:"I connect my team's day-to-day work to a purpose that goes beyond the task in front of them.", type:'p'},
+    {text:"During uncertain or difficult periods, I help my team find meaning in the work itself.", type:'p'},
+    {text:"I reflect on what gives my own work meaning and take action when that meaning is absent or eroded.", type:'p'},
+    {text:"When things are hard or uncertain, I actively look for a reason why the work still matters rather than waiting for the situation to improve.", type:'p'},
+    {text:"I feel confident in my ability to help my team find meaning in their work, including during difficult periods.", type:'e'},
+    {text:"I feel confident in my ability to sustain my own sense of purpose through prolonged uncertainty or adversity.", type:'e'},
+  ]},
+  {key:'P', label:'Prioritize',
+   def:'Focusing your own attention and energy on what matters most; protecting your time from low-value demands; deciding clearly and saying no when needed.',
+   excellenceStatement:"A leader who has mastered Prioritize can tell you, right now, what their most important work is — and they're actually doing it, not just planning to get to it. Their calendar matches their priorities; when the two drift apart, the calendar is what moves. They say no, cleanly and without guilt, even to their own boss, and their team notices and starts doing the same. They're not available for everything. That's the whole point — it's what makes them available for what matters.",
+   learningOutcomes:["Audit a week of their actual calendar against their stated priorities and identify the gap.", "Decline a request, including one from above, that doesn't serve their highest-priority work, without over-explaining.", "Protect a recurring block of focused time and defend it against routine interruption."],
+   items:[
+    {text:"I regularly assess whether how I am spending my time actually reflects my most important priorities.", type:'p'},
+    {text:"I say no to requests — including from above — that do not align with my highest-priority work.", type:'p'},
+    {text:"I protect blocks of focused time from meetings and requests that weren't already planned.", type:'p'},
+    {text:"When my to-do list and my stated priorities conflict, I choose my priorities rather than my list.", type:'p'},
+    {text:"I feel confident in my ability to identify what matters most and protect time to work on it.", type:'e'},
+    {text:"I feel confident in my ability to set and hold boundaries around my time and attention without guilt.", type:'e'},
+  ]},
+  {key:'L', label:'Listen',
+   def:'Producing the experience of feeling heard in others; making people feel understood rather than merely acknowledged in one-on-one and small group conversations.',
+   excellenceStatement:"A leader who has mastered Listen measures success by whether the other person actually felt heard — not by how good the conversation felt from their own side of it. They know their own bad habits here: jumping to advice before the problem's fully out, getting impatient when the conversation runs long, filling silence before something real has a chance to surface. They stay in a hard conversation instead of steering it toward a tidy ending. The proof shows up later — not in how the leader feels about their own listening, but in a team that actually tells them the truth, trusts them, and takes real risks together.",
+   learningOutcomes:["Reflect back both the content and the emotional “why” behind what someone has said (the Empathy factor), not just the facts.", "Give a conversation partner uninterrupted space to fully say what they came to say, resisting the urge to solve or redirect early (the Voice factor).", "Diagnose, in a real leadership conversation, which listening factor (Empathy, Attention, Voice, Common Ground) was missing when someone didn't end up feeling heard."],
+   items:[
+    {text:"When someone shares something with me, I reflect back what I think they feel about it and why.", type:'p'},
+    {text:"I give someone my full attention during a conversation.", type:'p'},
+    {text:"I make sure people get to say everything they want to say to me.", type:'p'},
+    {text:"In conversations, I point out where I see common ground.", type:'p'},
+    {text:"I feel confident in my ability to make people feel genuinely heard in one-on-one conversations — not just acknowledged.", type:'e'},
+    {text:"I feel confident in my ability to understand what's beneath what someone says — what they feel and why.", type:'e'},
+  ]},
+  {key:'E', label:'Execute',
+   def:'Following through on decisions; translating intention into action; building a track record of completion that your team can rely on.',
+   excellenceStatement:"A leader who has mastered Execute finishes what they start — that's just their reputation at this point, so nobody on the team bothers double-checking. Decisions turn into action fast, and when something's about to stall, they flag it before it quietly dies. If they can't deliver, they say so early and say exactly why. That reliability is contagious: people commit fully to shared work because they've seen this leader's follow-through and trust it'll land.",
+   learningOutcomes:["Break a stated goal into specific next actions, each with an owner and a date.", "Flag a commitment that's at risk before the deadline, rather than after it's missed.", "Move a stalled decision into action within a defined window, without waiting for more certainty."],
+   items:[
+    {text:"When I commit to an action, I complete it on time — or communicate proactively and early when that is at risk.", type:'p'},
+    {text:"I break complex goals into specific next actions with clear owners and timelines.", type:'p'},
+    {text:"I track my open commitments and follow up on them without being reminded by others.", type:'p'},
+    {text:"I move from discussion to decision and from decision to action.", type:'p'},
+    {text:"I feel confident in my ability to follow through on what I commit to, consistently and visibly.", type:'e'},
+    {text:"I feel confident in my ability to move my most important work forward — even when no one is checking on me.", type:'e'},
+  ]},
+  {key:'R', label:'Reflect',
+   def:'Deliberately learning from experience; slowing down to examine your own patterns; adjusting behavior based on what you observe about yourself over time.',
+   excellenceStatement:"A leader who has mastered Reflect actually stops to examine how they're leading, not just what they're producing — and does it often enough that it's a habit, not an event. They can point to real patterns in their own behavior: this one serves me, that one costs me. They ask around for feedback, do something visible with what they hear, and tell their team what they learned instead of sitting on it. Same experiences as everyone else, faster growth — because they're actually learning from them instead of just getting through them.",
+   learningOutcomes:["Name a pattern in their own leadership — one that helps them, one that costs them.", "Convert feedback they've received into one concrete behavior change, and be able to point to it.", "Make time most weeks to reflect on how they're leading, not just get through the to-do list."],
+   items:[
+    {text:"I set aside regular time to reflect on how I am leading — not just what I am producing.", type:'p'},
+    {text:"When I learn something important about how I lead, I share it with my team rather than keeping it to myself.", type:'p'},
+    {text:"I actively seek feedback on my leadership from multiple sources and take concrete action on what I hear.", type:'p'},
+    {text:"I notice and can name patterns in my own leadership behavior — both what serves me well and what does not.", type:'p'},
+    {text:"I feel confident in my ability to learn from my leadership experience, rather than simply accumulate more of it.", type:'e'},
+    {text:"I feel confident in my ability to spot patterns in how I lead and change the ones that aren't working.", type:'e'},
+  ]},
+];
+
+const TEAM_DIMS = [
+  {key:'S', label:'Synchronize',
+   def:'Building shared understanding across the team; aligning on priorities, context, and direction; preventing misalignment that produces rework and confusion.',
+   excellenceStatement:"A leader who has mastered Synchronize has a team that knows what they're doing, who's doing it, and why — without having to ask anyone. Priorities are visible and get updated the moment they change, so when something goes sideways, it's almost never because two people had different pictures in their head. Meetings end with actual clarity, and work keeps moving without the leader in the middle of every handoff. Staying aligned isn't a recurring chore for this team. It's just how they operate.",
+   learningOutcomes:["Diagnose whether a team's misalignment problem is a visibility problem (no shared picture) or a priorities problem (Prioritize-Team territory), and address the right one.", "Design a recurring, lightweight check-in that keeps the team's shared picture of priorities and ownership current without adding a standing meeting.", "Name team misalignment directly, in the moment, rather than letting it surface later as rework."],
+   items:[
+    {text:"My team has a shared understanding of our goals and where we stand on them.", type:'p'},
+    {text:"I create regular opportunities for the team to align on who is doing what and why.", type:'p'},
+    {text:"I make sure the team always has a clear, up-to-date picture of who owns what and how the pieces fit together.", type:'p'},
+    {text:"When the team is not aligned, I name it directly and work to build shared understanding before we move on.", type:'p'},
+    {text:"I feel confident in my ability to keep my team aligned on direction, priorities, and context — even during rapid change.", type:'e'},
+    {text:"I feel confident in my ability to surface and resolve misalignment before it produces rework or erodes trust.", type:'e'},
+  ]},
+  {key:'I', label:'Innovate',
+   def:'Creating the conditions for new ideas, adaptive thinking, and productive experimentation; building enough psychological safety that creativity is possible.',
+   excellenceStatement:"A leader who has mastered Innovate hears rough, half-formed ideas out loud before anyone's had time to polish them — and actually listens before judging. People take creative risks here because they've watched those risks get met with curiosity instead of an eye-roll. When an approach stops working, the team changes course instead of pushing harder on something broken. And when an experiment fails, the first question is what it taught them, not whose fault it was.",
+   learningOutcomes:["Respond to a rough, unpolished idea with curiosity before evaluating its feasibility.", "Reframe a failed experiment as a source of specific learning rather than a judgment on the person who tried it.", "Design a moment in the team's routine where questioning how the team works is explicitly invited, not just what it's working on."],
+   items:[
+    {text:"I respond to new or unconventional ideas with curiosity before I evaluate their feasibility.", type:'p'},
+    {text:"I create space for my team to think about problems in a new way, rather than just pushing harder on the same approach.", type:'p'},
+    {text:"When experiments fail, I treat them as chances to learn.", type:'p'},
+    {text:"I challenge my team to question how they work together — not just what they are working on.", type:'p'},
+    {text:"I feel confident in my ability to create conditions where my team thinks creatively and adaptively about hard problems.", type:'e'},
+    {text:"I feel confident that my team feels safe enough to share ideas that are rough or unconventional.", type:'e'},
+  ]},
+  {key:'M', label:'Meet',
+   def:'Designing and facilitating meetings that produce the right outcome — either shared understanding or clear decisions — matching the format to the purpose.',
+   excellenceStatement:"A leader who has mastered Meet can always tell you why a meeting is on the calendar before they send the invite. They pick the format to match — a conversation when the goal is understanding, a real decision process when the goal is a decision — and you can feel the difference in the room. Everyone gets an actual chance to speak, not just a seat at the table. People walk out knowing what got decided, why, and what happens next, because the meeting was built to produce exactly that.",
+   learningOutcomes:["Decide, before scheduling, whether a meeting's purpose is shared understanding or a decision, and choose a format that matches.", "Design a meeting structure that gives quieter participants a real, not just theoretical, chance to contribute.", "Close a meeting with the group aligned on what was decided, why, and what happens next."],
+   items:[
+    {text:"Before I schedule a meeting, I decide whether its goal is to build understanding or to make a decision — and I design it accordingly.", type:'p'},
+    {text:"I design meeting formats and methods to match their purpose, rather than defaulting to open discussion for everything.", type:'p'},
+    {text:"I ensure that every participant in a meeting has a genuine opportunity to contribute — not just those who are most vocal.", type:'p'},
+    {text:"Participants in my meetings leave with clarity about what was decided, why, and what happens next.", type:'p'},
+    {text:"I feel confident in my ability to facilitate meetings that achieve their intended purpose — whether that purpose is understanding or decision.", type:'e'},
+    {text:"I feel confident in my ability to design meeting formats in which participants feel heard, not just processed.", type:'e'},
+  ]},
+  {key:'P', label:'Prioritize',
+   def:'Setting clear team-level priorities; helping the team focus collectively on what matters most; protecting team capacity from fragmentation.',
+   excellenceStatement:"A leader who has mastered Prioritize (Team) has a team that can make good resource calls without checking with them first. Ask anyone what the top three priorities are right now, and they'll tell you — along with the tradeoffs behind them. New requests get weighed against what's already committed before anyone says yes. Saying no to a low-priority ask doesn't require a special occasion; it happens routinely. The team's capacity goes toward what matters, not toward whoever asked most recently.",
+   learningOutcomes:["State the team's current top three priorities without checking notes, and explain the tradeoffs behind them.", "Evaluate an incoming demand against current priorities before committing team capacity to it.", "Push back on a low-priority request, from inside or outside the team, in a way the team can see and learn from."],
+   items:[
+    {text:"My team can name our top three priorities at any given time without checking with me.", type:'p'},
+    {text:"When new demands come in, I check them against current team priorities before saying yes.", type:'p'},
+    {text:"I help the team make explicit tradeoffs — articulating not just what we are doing, but what we are deferring and why.", type:'p'},
+    {text:"I protect my team's capacity for high-priority work by actively pushing back on low-priority requests from within and outside the team.", type:'p'},
+    {text:"I feel confident in my ability to set and communicate team priorities clearly enough that my team can make good decisions without me.", type:'e'},
+    {text:"I feel confident in my ability to make and communicate tradeoff decisions in ways my team understands and can replicate.", type:'e'},
+  ]},
+  {key:'L', label:'Listening Culture',
+   def:"Creating conditions where mutual listening is the team's norm, not just the leader's personal practice; shaping how team members listen to each other even when you are not present.",
+   excellenceStatement:"A leader who has mastered Listening Culture has made feeling heard the team's habit, not just their own. Walk out of the room, and the team keeps listening to each other the same way — because that's how it's designed, not just how the leader behaves. Meetings are built so more than one perspective actually gets heard, not just tolerated. People paraphrase each other before jumping to the next point. The quietest person in the room is more likely to speak up on this team than on a comparable one, because the structure makes room for it. The team's trust doesn't depend on whether the leader is in the building.",
+   learningOutcomes:["Distinguish between listening behavior and felt understanding.", "Design a meeting or conversation that reliably produces felt-heard responses across diverse voices.", "Diagnose a trust breakdown using the listening-to-trust mediation model."],
+   items:[
+    {text:"I actively notice and name moments when team members feel unheard in group settings.", type:'p'},
+    {text:"I design team interactions so that multiple perspectives are heard, not just those of the most vocal or senior members.", type:'p'},
+    {text:"I actively help my team learn how to listen to each other and our stakeholders.", type:'p'},
+    {text:"I take deliberate steps to build a culture where people consistently feel heard by each other, not just by me.", type:'p'},
+    {text:"I feel confident in my ability to shape a team listening culture in which people consistently feel heard by each other — not just by me.", type:'e'},
+    {text:"I feel confident that when I am not in the room, my team still listens to each other the way I have modeled and designed for.", type:'e'},
+  ]},
+  {key:'E', label:'Empower',
+   def:"Building the capacity of individuals on the team; trusting people with meaningful work and the authority to do it; investing in others' development as a deliberate leadership act.",
+   excellenceStatement:"A leader who has mastered Empower leaves a team measurably more capable than they found it. They spend real time on each person's development — not just getting the work out the door — and you can point to actual growth because of it. They hand off meaningful work along with the authority to do it, and they don't take that authority back just because things get hard or the stakes go up. The proof is the team itself: more capable this year than last, and the year before that.",
+   learningOutcomes:["Delegate a piece of meaningful work, not just a task, along with the authority to do it.", "Identify what a specific team member is trying to develop and take one concrete step to support it this month.", "Hold their hands off a delegated task after a mistake, treating it as a development moment rather than a reason to reclaim it."],
+   items:[
+    {text:"I delegate meaningful work — not just tasks — in ways that build others' capability and stretch their growth.", type:'p'},
+    {text:"I know what each person on my team is working to develop, and I take regular steps to support it.", type:'p'},
+    {text:"I give team members the authority they need to do the work I have asked them to do — and do not take it back when it gets difficult.", type:'p'},
+    {text:"When team members make significant mistakes in work I've delegated, I tend to pull the work back rather than staying the course.", type:'p', reverse:true},
+    {text:"I feel confident in my ability to help the people on my team grow — in visible, specific ways — over time.", type:'e'},
+    {text:"I feel confident in my ability to delegate meaningful work without reverting to micromanagement when stakes feel high.", type:'e'},
+  ]},
+  {key:'R', label:'Refine',
+   def:'Building a culture of continuous improvement; making feedback a normal part of team life; learning systemically from what works and what does not.',
+   excellenceStatement:"A leader who has mastered Refine has made getting better a normal part of how the team works, not something that happens twice a year in a review. Feedback flows in every direction — including up to the leader — and it doesn't take courage to say something honest. When something breaks, the team's first question is what to fix, not who to blame. They're objectively better at working together than they were a year ago, and they can point to the specific habits or decisions that got them there. This team improves on its own. Nobody has to make them.",
+   learningOutcomes:["Give a team member timely feedback on their behavior, without waiting for the next formal review.", "Ask for feedback on their own leadership, then do something visible about it.", "Lead a “what do we change” conversation after something goes wrong, without it collapsing into “who's to blame.”"],
+   items:[
+    {text:"I regularly create space for the team to reflect on how we are working together — not only on what we are producing.", type:'p'},
+    {text:"I give team members specific, timely feedback on their behavior — not just during formal reviews or big moments.", type:'p'},
+    {text:"I invite genuine feedback on my own leadership from team members and take visible action on what I hear.", type:'p'},
+    {text:"When something goes wrong, I help my team examine the system or process rather than attributing blame to an individual.", type:'p'},
+    {text:"I feel confident in my ability to build a culture where specific, honest feedback is a normal and welcome part of how we work.", type:'e'},
+    {text:"I feel confident in my ability to lead a continuous improvement process that my team actually finds useful — not just another ritual that gets in the way.", type:'e'},
+  ]},
+];
+
+// ══════════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════════
+let state = {
+  name: '', email: '', isPost: false, preData: null,
+  section: 'self', scores: null,
+  saved: {}  // persists radio responses across section switches
+};
+
+// ══════════════════════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════════════════════
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+function showLoading(msg) {
+  document.getElementById('loading-msg').textContent = msg || 'Loading…';
+  document.getElementById('loading-overlay').style.display = 'flex';
+}
+function hideLoading() { document.getElementById('loading-overlay').style.display = 'none'; }
+
+// ══════════════════════════════════════════════════════════════
+// GATE
+// ══════════════════════════════════════════════════════════════
+async function handleGateSubmit() {
+  const nameEl  = document.getElementById('gateName');
+  const emailEl = document.getElementById('gateEmail');
+  const errEl   = document.getElementById('gate-error');
+  errEl.style.display = 'none';
+
+  const errs = [];
+  if (!nameEl.value.trim())  { nameEl.classList.add('error');  errs.push('Please enter your first name.'); }
+  else nameEl.classList.remove('error');
+  if (!emailEl.value.trim() || !emailEl.value.includes('@'))
+    { emailEl.classList.add('error'); errs.push('Please enter a valid email address.'); }
+  else emailEl.classList.remove('error');
+
+  if (errs.length) { errEl.textContent = errs.join(' '); errEl.style.display = 'block'; return; }
+
+  state.name  = nameEl.value.trim();
+  state.email = emailEl.value.trim().toLowerCase();
+
+  showLoading('Checking your record…');
+  state.preData = await lookupPreTest(state.email);
+  state.isPost  = !!state.preData;
+  hideLoading();
+
+  state.section = 'self';
+  state.saved   = {};
+  buildSection('self');
+  showPage('page-survey');
+}
+
+async function lookupPreTest(email) {
+  try {
+    const url = `${APPS_SCRIPT_URL}?action=lookup&email=${encodeURIComponent(email)}`;
+    const res  = await fetch(url);
+    const data = await res.json();
+    return data.found ? data : null;
+  } catch(e) { console.warn('Pre-test lookup failed:', e); return null; }
+}
+
+// ══════════════════════════════════════════════════════════════
+// RANDOMIZATION — dimension-block order and within-block item order
+// are randomized once per attempt and cached on state, so navigating
+// back/forward doesn't reshuffle mid-attempt. Scoring is unaffected:
+// gIdx is always computed from each item's FIXED position in its
+// SELF_DIMS/TEAM_DIMS array, never from display order.
+// ══════════════════════════════════════════════════════════════
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function getDimOrder(section) {
+  if (!state.dimOrder) state.dimOrder = {};
+  if (!state.dimOrder[section]) state.dimOrder[section] = shuffle([0,1,2,3,4,5,6]);
+  return state.dimOrder[section];
+}
+function getItemOrder(section, dIdx, type) {
+  if (!state.itemOrder) state.itemOrder = {};
+  const key = `${section}-${dIdx}`;
+  if (!state.itemOrder[key]) state.itemOrder[key] = {};
+  if (!state.itemOrder[key][type]) {
+    state.itemOrder[key][type] = shuffle(type === 'p' ? [0,1,2,3] : [4,5]);
+  }
+  return state.itemOrder[key][type];
+}
+
+// ══════════════════════════════════════════════════════════════
+// BUILD SURVEY SECTION
+// ══════════════════════════════════════════════════════════════
+function buildSection(section) {
+  const body   = document.getElementById('survey-body');
+  body.innerHTML = '';
+
+  const dims   = section === 'self' ? SELF_DIMS : TEAM_DIMS;
+  const offset = section === 'self' ? 0 : 42;
+  const isSelf = section === 'self';
+
+  // Banner
+  const banner = document.createElement('div');
+  banner.className = `section-banner ${isSelf ? 'self' : 'team'}`;
+  banner.innerHTML = `
+    <div class="sb-icon">${isSelf ? 'S' : 'T'}</div>
+    <div>
+      <div class="sb-title">${isSelf
+        ? 'Part 1: SIMPLER SELF — How you lead yourself'
+        : 'Part 2: SIMPLER TEAM — How you lead others'}</div>
+      <div class="sb-desc">${isSelf
+        ? '42 items across 7 dimensions. Focus on your personal leadership — your mindset, habits, and how you manage yourself.'
+        : '42 items across 7 dimensions. Focus on how you lead within a team — conditions you create, decisions you make for others.'}</div>
+    </div>`;
+  body.appendChild(banner);
+
+  const order = getDimOrder(section);
+  const counter = { n: offset };
+  order.forEach((dIdx, displayPos) => {
+    const dim = dims[dIdx];
+    body.appendChild(buildDimBlock(dim, section, dIdx, offset + dIdx * 6, displayPos, counter));
+  });
+
+  // Nav bar
+  const backBtn = document.getElementById('btn-back');
+  const nextBtn = document.getElementById('btn-next');
+  const navInfo = document.getElementById('nav-info');
+  if (isSelf) {
+    backBtn.style.display = 'none';
+    nextBtn.textContent = 'Continue to Part 2 →';
+    navInfo.textContent = 'Part 1 of 2: SIMPLER SELF';
+  } else {
+    backBtn.style.display = 'block';
+    nextBtn.textContent = 'See my results →';
+    navInfo.textContent = 'Part 2 of 2: SIMPLER TEAM';
+  }
+
+  // Restore previously saved answers
+  restoreResponses(offset, offset + 42);
+  updateProgress();
+}
+
+// Dimension name/definition are deliberately NOT shown here — only a neutral
+// section counter. Revealing which construct a block measures (e.g. "Integrity")
+// right before answering it invites socially desirable responding; this was
+// previously shown and contradicted the tool's own administration guidance.
+function buildDimBlock(dim, section, dIdx, globalOffset, displayPos, counter) {
+  const isSelf = section === 'self';
+  const block  = document.createElement('div');
+  block.className = 'dim-block';
+
+  block.innerHTML = `
+    <div class="dim-header">
+      <div class="dim-badge ${isSelf ? 'self' : 'team'}">${displayPos + 1}</div>
+      <div>
+        <span class="dim-name">Section ${displayPos + 1} of 7</span>
+      </div>
+    </div>`;
+
+  // Practice items (randomized order; gIdx stays tied to fixed array position)
+  const pg = document.createElement('div');
+  pg.innerHTML = '<div class="item-group-label">How often do you do this? &nbsp;(1 = Never · 7 = Always)</div>';
+  getItemOrder(section, dIdx, 'p').forEach(i => {
+    counter.n++;
+    pg.appendChild(buildItemRow(dim.items[i], globalOffset + i, 'p', counter.n));
+  });
+  block.appendChild(pg);
+
+  // Separator
+  const sep = document.createElement('div');
+  sep.className = 'eff-sep';
+  sep.innerHTML = '<div class="eff-sep-line"></div><div class="eff-sep-label">How confident are you? (1 = Not at all · 7 = Extremely)</div><div class="eff-sep-line"></div>';
+  block.appendChild(sep);
+
+  // Efficacy items (randomized order)
+  const eg = document.createElement('div');
+  getItemOrder(section, dIdx, 'e').forEach(i => {
+    counter.n++;
+    eg.appendChild(buildItemRow(dim.items[i], globalOffset + i, 'e', counter.n));
+  });
+  block.appendChild(eg);
+
+  return block;
+}
+
+function buildItemRow(item, gIdx, type, displayNum) {
+  const scale = type === 'p' ? P_SCALE : E_SCALE;
+  const row   = document.createElement('div');
+  row.className = 'item-row';
+
+  const opts = scale.map(s => `
+    <div class="likert-opt ${type}">
+      <input type="radio" name="item_${gIdx}" id="item_${gIdx}_${s.v}" value="${s.v}"
+             onchange="saveResponse(${gIdx}, ${s.v})">
+      <label for="item_${gIdx}_${s.v}">
+        <span class="opt-n">${s.v}</span>${s.l}
+      </label>
+    </div>`).join('');
+
+  row.innerHTML = `
+    <div class="item-text"><span class="item-num">${displayNum}.</span> ${item.text}</div>
+    <div class="likert-row">${opts}</div>`;
+
+  return row;
+}
+
+// ══════════════════════════════════════════════════════════════
+// RESPONSE PERSISTENCE
+// ══════════════════════════════════════════════════════════════
+function saveResponse(gIdx, val) {
+  state.saved[gIdx] = val;
+  updateProgress();
+}
+
+function restoreResponses(start, end) {
+  for (let i = start; i < end; i++) {
+    if (state.saved[i] !== undefined) {
+      const el = document.getElementById(`item_${i}_${state.saved[i]}`);
+      if (el) el.checked = true;
+    }
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// PROGRESS
+// ══════════════════════════════════════════════════════════════
+function updateProgress() {
+  // Also pick up any DOM-selected values not yet in state.saved (belt-and-suspenders)
+  for (let i = 0; i < 84; i++) {
+    const el = document.querySelector(`input[name="item_${i}"]:checked`);
+    if (el && state.saved[i] === undefined) state.saved[i] = parseInt(el.value);
+  }
+  const answered = Object.keys(state.saved).length;
+  const pct = Math.round((answered / 84) * 100);
+  document.getElementById('progress-text').textContent = `${answered} of 84 answered`;
+  document.getElementById('progress-pct').textContent  = `${pct}%`;
+  document.getElementById('progress-fill').style.width = `${pct}%`;
+}
+
+// ══════════════════════════════════════════════════════════════
+// SURVEY NAVIGATION
+// ══════════════════════════════════════════════════════════════
+function advanceSurvey() {
+  // Save any currently visible responses before checking
+  for (let i = 0; i < 84; i++) {
+    const el = document.querySelector(`input[name="item_${i}"]:checked`);
+    if (el) state.saved[i] = parseInt(el.value);
+  }
+
+  const errEl = document.getElementById('survey-error');
+
+  if (state.section === 'self') {
+    const missing = [];
+    for (let i = 0; i < 42; i++) { if (state.saved[i] === undefined) missing.push(i); }
+    if (missing.length > 0) {
+      errEl.style.display = 'block';
+      errEl.textContent = `Please answer all questions before continuing. You have ${missing.length} unanswered question${missing.length > 1 ? 's' : ''} in this section.`;
+      const el = document.querySelector(`input[name="item_${missing[0]}"]`);
+      if (el) el.closest('.item-row').scrollIntoView({behavior:'smooth', block:'center'});
+      return;
+    }
+    errEl.style.display = 'none';
+    state.section = 'team';
+    buildSection('team');
+    showPage('page-survey');
+
+  } else {
+    const missing = [];
+    for (let i = 42; i < 84; i++) { if (state.saved[i] === undefined) missing.push(i); }
+    if (missing.length > 0) {
+      errEl.style.display = 'block';
+      errEl.textContent = `Please answer all questions before submitting. You have ${missing.length} unanswered question${missing.length > 1 ? 's' : ''} in this section.`;
+      const el = document.querySelector(`input[name="item_${missing[0]}"]`);
+      if (el) el.closest('.item-row').scrollIntoView({behavior:'smooth', block:'center'});
+      return;
+    }
+    errEl.style.display = 'none';
+    submitSurvey();
+  }
+}
+
+function goBackSection() {
+  for (let i = 42; i < 84; i++) {
+    const el = document.querySelector(`input[name="item_${i}"]:checked`);
+    if (el) state.saved[i] = parseInt(el.value);
+  }
+  state.section = 'self';
+  buildSection('self');
+  showPage('page-survey');
+}
+
+// ══════════════════════════════════════════════════════════════
+// SCORING
+// ══════════════════════════════════════════════════════════════
+function avg(arr) { return arr.reduce((a, b) => a + b, 0) / arr.length; }
+
+// Reverse-coded items (S2-P4, T6-P4 as of V3) are stored and displayed exactly
+// like any other item — respondents never see which items are reverse-worded.
+// Scoring inverts them (8 - raw) before averaging into the dimension score.
+function scoreDim(dim, off) {
+  const pItems = dim.items.filter(it => it.type === 'p');
+  const eItems = dim.items.filter(it => it.type === 'e');
+  const pVals = pItems.map((it, i) => {
+    const raw = state.saved[off + i];
+    return it.reverse ? (8 - raw) : raw;
+  });
+  const eVals = eItems.map((it, i) => {
+    const raw = state.saved[off + 4 + i];
+    return it.reverse ? (8 - raw) : raw;
+  });
+  return { p: avg(pVals), e: avg(eVals) };
+}
+
+function computeScores() {
+  const selfPractice = [], selfEfficacy = [], selfQuadrants = [];
+  const teamPractice = [], teamEfficacy = [], teamQuadrants = [];
+
+  SELF_DIMS.forEach((dim, d) => {
+    const off = d * 6;
+    const { p, e } = scoreDim(dim, off);
+    selfPractice.push(parseFloat(p.toFixed(2)));
+    selfEfficacy.push(parseFloat(e.toFixed(2)));
+    selfQuadrants.push(quadrantLabel(p, e));
+  });
+
+  TEAM_DIMS.forEach((dim, d) => {
+    const off = 42 + d * 6;
+    const { p, e } = scoreDim(dim, off);
+    teamPractice.push(parseFloat(p.toFixed(2)));
+    teamEfficacy.push(parseFloat(e.toFixed(2)));
+    teamQuadrants.push(quadrantLabel(p, e));
+  });
+
+  return { selfPractice, selfEfficacy, selfQuadrants, teamPractice, teamEfficacy, teamQuadrants };
+}
+
+function quadrantLabel(practice, efficacy) {
+  const trans = Math.abs(practice - 4.0) <= 0.5 || Math.abs(efficacy - 4.0) <= 0.5;
+  let label;
+  if      (practice >= 4.0 && efficacy >= 4.0) label = 'STRENGTH';
+  else if (practice <  4.0 && efficacy >= 4.0) label = 'EXECUTION GAP';
+  else if (practice >= 4.0 && efficacy <  4.0) label = 'UNCONSCIOUS COMPETENCE';
+  else                                           label = 'DEVELOPMENT PRIORITY';
+  return trans ? label + ' (transitional)' : label;
+}
+
+// ══════════════════════════════════════════════════════════════
+// SUBMIT
+// ══════════════════════════════════════════════════════════════
+async function submitSurvey() {
+  showLoading('Scoring your responses…');
+
+  const scores   = computeScores();
+  state.scores   = scores;
+
+  const payload = {
+    action: 'log',
+    name:        state.name,
+    email:       state.email,
+    wave:        state.isPost ? 'Post-Test' : 'Pre-Test',
+    isPostTest:  state.isPost,
+    selfPractice:  scores.selfPractice,
+    selfEfficacy:  scores.selfEfficacy,
+    selfQuadrants: scores.selfQuadrants,
+    teamPractice:  scores.teamPractice,
+    teamEfficacy:  scores.teamEfficacy,
+    teamQuadrants: scores.teamQuadrants
+  };
+
+  const result = await logToSheet(payload);
+
+  hideLoading();
+  buildResults(scores, result);
+  showPage('page-results');
+}
+
+// ══════════════════════════════════════════════════════════════
+// BUILD RESULTS
+// ══════════════════════════════════════════════════════════════
+function buildResults(scores, sheetResult) {
+  const { selfPractice, selfEfficacy, selfQuadrants, teamPractice, teamEfficacy, teamQuadrants } = scores;
+
+  // Header
+  document.getElementById('result-name').textContent = state.name;
+  document.getElementById('result-date').textContent =
+    new Date().toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric', year:'numeric'});
+  const badge = document.getElementById('result-wave-badge');
+  badge.textContent = state.isPost ? 'Post-Test' : 'Pre-Test';
+  badge.className   = `wave-badge ${state.isPost ? 'post' : 'pre'}`;
+
+  // Status
+  if (sheetResult === 'ok')
+    showStatus('success', '✓ Your results have been saved and emailed to you.');
+  else
+    showStatus('warning', '⚠ Results could not be auto-saved. Use the download button to keep your diagram.');
+
+  // Legend
+  const hasPre = state.isPost && state.preData;
+  document.getElementById('spider-legend').innerHTML = `
+    ${hasPre ? '<div class="legend-item"><div class="legend-dash"></div><span>Pre-Test baseline</span></div>' : ''}
+    <div class="legend-item"><div class="legend-swatch" style="background:rgba(242,98,39,.65)"></div>SIMPLER SELF (left)</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:rgba(70,98,137,.65)"></div>SIMPLER TEAM (right)</div>
+    <div class="legend-item" style="font-size:10px;color:#aaa;">- - 4.0 midpoint ring</div>`;
+
+  // Components
+  drawSpider(selfPractice, teamPractice, hasPre ? state.preData : null);
+  buildScoreTable(scores);
+  buildQuadrantTable(scores);
+}
+
+function showStatus(type, msg) {
+  const el = document.getElementById('sheet-status');
+  el.className = `status-card ${type}`;
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+// ══════════════════════════════════════════════════════════════
+// SPIDER DIAGRAM
+// SELF on LEFT (orange, spokes 7–13), TEAM on RIGHT (blue, spokes 0–6)
+// Scale: 1 (center) → 7 (outer edge), midpoint ring at 4.0
+// ══════════════════════════════════════════════════════════════
+function drawSpider(selfPractice, teamPractice, preData) {
+  const canvas = document.getElementById('spiderCanvas');
+  const ctx    = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const cx = W / 2, cy = H / 2;
+  const R = 210;   // outer edge = score 7
+  const N = 14;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Angle: spoke i=0 at top (-90°), clockwise. i=0–6 = right (TEAM), i=7–13 = left (SELF)
+  function spokeAngle(i) { return (2 * Math.PI * i / N) - Math.PI / 2; }
+  function ptScore(i, score) {
+    const a = spokeAngle(i), r = (score / 7) * R;
+    return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
+  }
+  function ptR(i, r) {
+    const a = spokeAngle(i);
+    return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
+  }
+
+  // ── Grid rings 1–7 ──
+  for (let lv = 1; lv <= 7; lv++) {
+    const r = (lv / 7) * R;
+    ctx.beginPath();
+    for (let i = 0; i < N; i++) {
+      const p = ptR(i, r);
+      i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y);
+    }
+    ctx.closePath();
+    if (lv === 4) {
+      ctx.strokeStyle = 'rgba(0,0,0,0.22)';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([5, 3]);
+    } else {
+      ctx.strokeStyle = 'rgba(0,0,0,0.07)';
+      ctx.lineWidth = 0.8;
+      ctx.setLineDash([]);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // ── Level labels ──
+  [1, 4, 7].forEach(lv => {
+    const r = (lv / 7) * R;
+    // Place label just inside the ring on the right side (between spoke 0 and spoke 1)
+    const a = spokeAngle(0) + 0.13;
+    ctx.fillStyle = lv === 4 ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.28)';
+    ctx.font      = lv === 4 ? 'bold 13px system-ui' : '13px system-ui';
+    ctx.textAlign     = 'left';
+    ctx.textBaseline  = 'middle';
+    ctx.fillText(lv.toString(), cx + (r + 4) * Math.cos(a), cy + (r + 4) * Math.sin(a));
+  });
+
+  // Midpoint annotation
+  ctx.fillStyle    = 'rgba(0,0,0,0.4)';
+  ctx.font         = '11px system-ui';
+  ctx.textAlign    = 'right';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('4.0', cx - 7, cy - (4 / 7) * R);
+
+  // ── Spoke axes ──
+  for (let i = 0; i < N; i++) {
+    const p = ptR(i, R + 3);
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(p.x, p.y);
+    ctx.strokeStyle = 'rgba(0,0,0,0.09)'; ctx.lineWidth = 0.8; ctx.stroke();
+  }
+
+  // ── Dividers (dashed) at top (i=0) and bottom (i=7) ──
+  ctx.setLineDash([3, 3]);
+  ctx.strokeStyle = 'rgba(0,0,0,0.14)';
+  ctx.lineWidth   = 1;
+  [0, 7].forEach(i => {
+    const p = ptR(i, R + 25);
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(p.x, p.y); ctx.stroke();
+  });
+  ctx.setLineDash([]);
+
+  // ── Polygon drawing ──
+  // scores array order: [TEAM(0–6), SELF(0–6)] → aligns with spokes 0–6 (right=TEAM), 7–13 (left=SELF)
+  function drawPolygon(scores, isPre) {
+    if (isPre) {
+      ctx.beginPath();
+      scores.forEach((s, i) => {
+        const p = ptScore(i, s);
+        i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y);
+      });
+      ctx.closePath();
+      ctx.strokeStyle = 'rgba(80,80,80,0.38)';
+      ctx.lineWidth   = 1.5;
+      ctx.setLineDash([5, 4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      return;
+    }
+
+    // Filled polygon — left half orange (SELF), right half blue (TEAM)
+    ['left', 'right'].forEach(side => {
+      ctx.save();
+      ctx.beginPath();
+      side === 'left' ? ctx.rect(0, 0, cx, H) : ctx.rect(cx, 0, cx, H);
+      ctx.clip();
+      ctx.beginPath();
+      scores.forEach((s, i) => {
+        const p = ptScore(i, s);
+        i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y);
+      });
+      ctx.closePath();
+      ctx.fillStyle = side === 'left' ? 'rgba(242,98,39,0.18)' : 'rgba(70,98,137,0.18)';
+      ctx.fill();
+      ctx.restore();
+    });
+
+    // Outline
+    ctx.beginPath();
+    scores.forEach((s, i) => {
+      const p = ptScore(i, s);
+      i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y);
+    });
+    ctx.closePath();
+    ctx.strokeStyle = 'rgba(0,0,0,0.22)';
+    ctx.lineWidth   = 1.5;
+    ctx.stroke();
+
+    // Dots — TEAM=blue (i<7), SELF=orange (i>=7)
+    scores.forEach((s, i) => {
+      const p = ptScore(i, s);
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 3.5, 0, Math.PI * 2);
+      ctx.fillStyle = i < 7 ? '#466289' : '#F26227';
+      ctx.fill();
+    });
+  }
+
+  // Pre-test overlay (dashed gray)
+  if (preData) {
+    const preScores = [...preData.teamPractice, ...preData.selfPractice];
+    drawPolygon(preScores, true);
+  }
+
+  // Current profile (solid, colored)
+  drawPolygon([...teamPractice, ...selfPractice], false);
+
+  // ── Spoke labels ──
+  // Label order: TEAM_DIMS at spokes 0–6 (right), SELF_DIMS at spokes 7–13 (left)
+  const allDims = [...TEAM_DIMS, ...SELF_DIMS];
+  for (let i = 0; i < N; i++) {
+    const a      = spokeAngle(i);
+    const lR     = R + 40;
+    const lx     = cx + lR * Math.cos(a);
+    const ly     = cy + lR * Math.sin(a);
+    const dim    = allDims[i];
+    const isSelf = i >= 7;
+
+    ctx.save();
+    ctx.translate(lx, ly);
+    ctx.textBaseline = 'middle';
+
+    const cosA = Math.cos(a);
+    ctx.textAlign = cosA > 0.25 ? 'left' : cosA < -0.25 ? 'right' : 'center';
+
+    // Key letter
+    ctx.font      = 'bold 16px system-ui';
+    ctx.fillStyle = isSelf ? '#F26227' : '#466289';
+    ctx.fillText(dim.key, 0, -13);
+
+    // Dimension label — any multi-word label wraps to its own lines so long
+    // names (e.g. "Listening Culture") never run past the canvas edge.
+    ctx.font      = '600 13px system-ui';
+    ctx.fillStyle = 'rgba(0,0,0,0.65)';
+    const words = dim.label.split(' ');
+    if (words.length === 1) {
+      ctx.fillText(dim.label, 0, 6);
+    } else {
+      words.forEach((w, wi) => ctx.fillText(w, 0, 6 + wi * 16));
+    }
+
+    ctx.restore();
+  }
+
+  // Section labels in the interior
+  ctx.font         = '600 15px system-ui';
+  ctx.textAlign    = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle    = 'rgba(242,98,39,0.45)';
+  ctx.fillText('SELF', cx - R * 0.50, cy + 7);
+  ctx.fillStyle    = 'rgba(70,98,137,0.45)';
+  ctx.fillText('TEAM', cx + R * 0.50, cy + 7);
+}
+
+// ══════════════════════════════════════════════════════════════
+// SCORES TABLE
+// ══════════════════════════════════════════════════════════════
+function buildScoreTable(scores) {
+  const { selfPractice, selfEfficacy, teamPractice, teamEfficacy } = scores;
+
+  let html = `<table>
+    <thead><tr>
+      <th style="width:38%">Dimension</th>
+      <th style="width:37%">Practice score</th>
+      <th style="width:12%;text-align:right">P</th>
+      <th style="width:13%;text-align:right">E</th>
+    </tr></thead><tbody>`;
+
+  html += `<tr class="sec-row"><td colspan="4" style="background:rgba(242,98,39,.06);color:#F26227">SIMPLER SELF</td></tr>`;
+  SELF_DIMS.forEach((dim, i) => {
+    const p = selfPractice[i], e = selfEfficacy[i];
+    const pct = Math.round((p / 7) * 100);
+    html += `<tr>
+      <td>${dim.key} — ${dim.label}</td>
+      <td><div class="score-bar-wrap">
+        <div class="score-bar"><div class="score-bar-fill" style="width:${pct}%;background:#F26227;"></div></div>
+      </div></td>
+      <td style="text-align:right;font-weight:700;color:#F26227">${p.toFixed(1)}</td>
+      <td style="text-align:right;color:#888">${e.toFixed(1)}</td>
+    </tr>`;
+  });
+
+  html += `<tr class="sec-row"><td colspan="4" style="background:rgba(70,98,137,.06);color:#466289">SIMPLER TEAM</td></tr>`;
+  TEAM_DIMS.forEach((dim, i) => {
+    const p = teamPractice[i], e = teamEfficacy[i];
+    const pct = Math.round((p / 7) * 100);
+    html += `<tr>
+      <td>${dim.key} — ${dim.label}</td>
+      <td><div class="score-bar-wrap">
+        <div class="score-bar"><div class="score-bar-fill" style="width:${pct}%;background:#466289;"></div></div>
+      </div></td>
+      <td style="text-align:right;font-weight:700;color:#466289">${p.toFixed(1)}</td>
+      <td style="text-align:right;color:#888">${e.toFixed(1)}</td>
+    </tr>`;
+  });
+
+  html += '</tbody></table>';
+  document.getElementById('scores-table').innerHTML = html;
+}
+
+// ══════════════════════════════════════════════════════════════
+// QUADRANT TABLE
+// ══════════════════════════════════════════════════════════════
+function buildQuadrantTable(scores) {
+  const { selfPractice, selfEfficacy, selfQuadrants, teamPractice, teamEfficacy, teamQuadrants } = scores;
+
+  function badge(q) {
+    const base  = q.replace(' (transitional)', '');
+    const isTr  = q.includes('transitional');
+    let cls = 'dev-prior';
+    if (base === 'STRENGTH')              cls = 'strength';
+    if (base === 'EXECUTION GAP')         cls = 'exec-gap';
+    if (base === 'UNCONSCIOUS COMPETENCE')cls = 'unconscious';
+    return `<span class="q-badge ${cls}">${base}</span>${isTr ? '<span style="font-size:9px;color:#aaa;margin-left:4px">transitional</span>' : ''}`;
+  }
+
+  function rowCls(q) {
+    if (q.includes('EXECUTION GAP'))       return 'exec-gap';
+    if (q.includes('DEVELOPMENT PRIORITY'))return 'dev-prior';
+    return '';
+  }
+
+  let html = `<table>
+    <thead><tr>
+      <th style="width:38%">Dimension</th>
+      <th style="width:13%;text-align:center">Practice</th>
+      <th style="width:13%;text-align:center">Efficacy</th>
+      <th style="width:36%">Quadrant</th>
+    </tr></thead><tbody>`;
+
+  html += `<tr class="sec-row"><td colspan="4" style="background:rgba(242,98,39,.06);color:#F26227">SIMPLER SELF</td></tr>`;
+  SELF_DIMS.forEach((dim, i) => {
+    const q = selfQuadrants[i];
+    html += `<tr class="${rowCls(q)}">
+      <td>${dim.key} — ${dim.label}</td>
+      <td style="text-align:center;font-weight:600;color:#F26227">${selfPractice[i].toFixed(1)}</td>
+      <td style="text-align:center;color:#888">${selfEfficacy[i].toFixed(1)}</td>
+      <td>${badge(q)}</td>
+    </tr>`;
+  });
+
+  html += `<tr class="sec-row"><td colspan="4" style="background:rgba(70,98,137,.06);color:#466289">SIMPLER TEAM</td></tr>`;
+  TEAM_DIMS.forEach((dim, i) => {
+    const q = teamQuadrants[i];
+    html += `<tr class="${rowCls(q)}">
+      <td>${dim.key} — ${dim.label}</td>
+      <td style="text-align:center;font-weight:600;color:#466289">${teamPractice[i].toFixed(1)}</td>
+      <td style="text-align:center;color:#888">${teamEfficacy[i].toFixed(1)}</td>
+      <td>${badge(q)}</td>
+    </tr>`;
+  });
+
+  html += '</tbody></table>';
+  document.getElementById('quadrant-table').innerHTML = html;
+}
+
+// ══════════════════════════════════════════════════════════════
+// GOOGLE SHEET INTEGRATION
+// ══════════════════════════════════════════════════════════════
+async function logToSheet(payload) {
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
+    const data = await res.json();
+    return data.status === 'ok' ? 'ok' : 'error';
+  } catch(e) { console.warn('Sheet log failed:', e); return 'error'; }
+}
+
+// ══════════════════════════════════════════════════════════════
+// UTILITIES
+// ══════════════════════════════════════════════════════════════
+function downloadPNG() {
+  const canvas = document.getElementById('spiderCanvas');
+  const link   = document.createElement('a');
+  link.download = `SIMPLER-${state.name.replace(/\s+/g,'-')}-${new Date().toISOString().slice(0,10)}.png`;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
+function retake() {
+  document.getElementById('gateName').value  = '';
+  document.getElementById('gateEmail').value = '';
+  state = { name:'', email:'', isPost:false, preData:null, section:'self', scores:null, saved:{} };
+  showPage('page-gate');
+}
+
+</script>
+</body>
+</html>
